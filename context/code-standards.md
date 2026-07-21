@@ -319,4 +319,6 @@ Approved dependencies:
 
 **apps/mobile:** `expo-router`, `nativewind`, `react-native-chart-kit`, `expo-secure-store`, `zod`
 
+**apps/web (devDependency only, never shipped):** `playwright` — headless-browser verification of UI features during the build, since no `chromium-cli`-equivalent tool is available in this environment. Not a runtime dependency.
+
 Do not install anything outside this list without updating it first.
