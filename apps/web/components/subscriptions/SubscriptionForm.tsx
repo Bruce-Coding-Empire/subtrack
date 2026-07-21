@@ -238,7 +238,7 @@ export function SubscriptionForm({ defaultValues, onSubmit, onCancel, submitLabe
 
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button type="button" onClick={onCancel} className="bg-accent text-accent-foreground hover:bg-accent-dark">
               Cancel
             </Button>
           )}
