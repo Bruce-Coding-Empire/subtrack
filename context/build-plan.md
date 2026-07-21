@@ -38,6 +38,7 @@ For each app: UI built with mock data first, verified visually, then wired to th
 - `JwtStrategy` + `JwtAuthGuard` per `library-docs.md`
 - Password hashing with bcrypt
 - Refresh token as httpOnly cookie in response (web-compatible); also returned in body for mobile
+- Swagger bootstrap set up in `main.ts` at this point per `library-docs.md` — `AuthController` is the first controller decorated, every controller after this follows the same pattern from the start
 
 ---
 

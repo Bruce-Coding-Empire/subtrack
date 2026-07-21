@@ -296,7 +296,85 @@ async getConvertedAmount(amount: number, from: string, to: string): Promise<numb
 
 ---
 
-## Expo Router (apps/mobile)
+## Swagger / OpenAPI (apps/api)
+
+**Check first:** AGENTS.md for an installed Swagger/Nest OpenAPI skill.
+
+### Bootstrap Setup
+
+```typescript
+// main.ts
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
+
+const config = new DocumentBuilder()
+  .setTitle("SubTrack API")
+  .setDescription("Subscription tracking API — auth, subscriptions, dashboard, currency")
+  .setVersion("1.0")
+  .addBearerAuth()
+  .build();
+
+const document = SwaggerModule.createDocument(app, config);
+SwaggerModule.setup("api/docs", app, document);
+```
+
+Docs served at `http://localhost:3001/api/docs` in dev. Never expose Swagger UI in production without auth in front of it — for this portfolio project, disable it in production entirely via an env check:
+
+```typescript
+if (process.env.NODE_ENV !== "production") {
+  SwaggerModule.setup("api/docs", app, document);
+}
+```
+
+### Controller Decoration
+
+```typescript
+// modules/subscriptions/subscriptions.controller.ts
+@ApiTags("subscriptions")
+@ApiBearerAuth()
+@Controller("subscriptions")
+@UseGuards(JwtAuthGuard)
+export class SubscriptionsController {
+  @Post()
+  @ApiOperation({ summary: "Create a new subscription" })
+  @ApiResponse({ status: 201, description: "Subscription created" })
+  async create(@CurrentUser() userId: string, @Body() dto: CreateSubscriptionDto) {
+    // ...
+  }
+}
+```
+
+### DTO Decoration
+
+```typescript
+// modules/subscriptions/dto/create-subscription.dto.ts
+export class CreateSubscriptionDto {
+  @ApiProperty({ example: "Netflix" })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ example: 15.99 })
+  @IsNumber()
+  cost: number;
+
+  @ApiProperty({ enum: ["weekly", "monthly", "yearly", "custom"] })
+  @IsEnum(["weekly", "monthly", "yearly", "custom"])
+  billingCycle: string;
+}
+```
+
+**Rules:**
+
+- Every controller gets `@ApiTags()` matching its module name
+- Every endpoint gets `@ApiOperation({ summary })` — one sentence, plain English
+- Every DTO field gets `@ApiProperty()` with a realistic `example` — this is what makes the Swagger UI actually usable for testing, not just decorative
+- `@ApiBearerAuth()` on every controller that sits behind `JwtAuthGuard`
+- Swagger docs are written in the same commit/session as the endpoint itself — never added retroactively as cleanup. An endpoint isn't "done" per `progress-tracker.md` until its Swagger decoration is in place too.
+- Swagger UI is a genuinely good manual-testing tool during the build (curl-free), and doubles as a portfolio artifact — a hiring manager can hit `/api/docs` and try your API live
+
+---
+
+
 
 **Check first:** AGENTS.md for an installed Expo Router skill — API has changed across Expo SDK versions.
 

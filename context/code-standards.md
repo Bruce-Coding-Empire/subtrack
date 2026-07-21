@@ -48,6 +48,7 @@ Implementation rules for the entire monorepo. The AI agent must follow these in 
 - Every endpoint scoped to the authenticated user — extract `userId` via `@CurrentUser()` decorator (`common/decorators/current-user.decorator.ts`), never trust a `userId` from the request body
 - Scheduled jobs live in `modules/scheduler/`, never inline `@Cron()` decorators in feature services
 - Never call a third-party API (FX rates) from a request-handling path — only from scheduled jobs, reading/writing the cache table
+- Every controller and DTO decorated with Swagger per `library-docs.md` — an endpoint is not complete without it
 
 ---
 
@@ -311,7 +312,7 @@ Never install a package without a clear reason. Check first:
 
 Approved dependencies:
 
-**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`
+**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`
 
 **apps/web:** `tailwindcss`, `shadcn/ui` components, `recharts`, `lucide-react`, `zod` (form validation)
 
