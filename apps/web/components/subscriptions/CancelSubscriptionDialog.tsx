@@ -48,7 +48,7 @@ export function CancelSubscriptionDialog({ subscriptionId, onCancelled }: Props)
         if (!next) setError(null);
       }}
     >
-      <Button variant="outline" onClick={() => setOpen(true)} className="border-border bg-error text-white hover:bg-error/90">
+      <Button onClick={() => setOpen(true)} className="border-error bg-surface text-error hover:bg-error-light">
         <Ban className="size-4" />
         Cancel Subscription
       </Button>
@@ -66,7 +66,7 @@ export function CancelSubscriptionDialog({ subscriptionId, onCancelled }: Props)
           </p>
         )}
         <AlertDialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button onClick={() => setOpen(false)} className="border-accent bg-surface text-accent hover:bg-accent-light">
             Keep Subscription
           </Button>
           <Button onClick={handleConfirm} disabled={isSubmitting} className="bg-error text-white hover:bg-error/90">

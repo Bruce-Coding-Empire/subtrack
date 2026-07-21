@@ -48,9 +48,8 @@ export function EditSubscriptionDialog({ subscription, onSaved }: Props) {
       }}
     >
       <Button
-        variant="outline"
         onClick={() => setOpen(true)}
-        className="border-border bg-accent text-surface hover:bg-accent-dark hover:text-surface-secondary"
+        className="border-accent bg-surface text-accent hover:bg-accent-light"
       >
         <Pencil className="size-4" />
         Edit

@@ -95,8 +95,11 @@ Pill shape (`rounded-full`) for status and category badges: `px-2 py-0.5`, `text
 ## Buttons
 
 **Primary:** `bg-accent`, white text, `rounded-md`, `px-4 py-2`, `font-medium`
-**Secondary:** white background, `border-border`, `text-text-primary`, `rounded-md`, `px-4 py-2`
+**Secondary:** the inverse of Primary — white background (`bg-surface`), `border-accent`, `text-accent`, `rounded-md`, `px-4 py-2`; hover: `bg-accent-light` (text/border stay accent). Used for a non-destructive action that sits next to a stronger button — a modal trigger that isn't the page's main action (e.g. "Edit"), or a dialog's non-destructive dismiss option (e.g. "Keep Subscription" next to a destructive confirm). Not a muted/gray button — it must read as clearly clickable, just visually quieter than Primary/Destructive.
 **Destructive** (cancel subscription): `bg-error`, white text — always requires a confirmation step before firing (dialog on web, native alert on mobile) — never destructive on a single tap/click
+**Destructive (outlined trigger):** for a button that only *opens* a confirmation dialog (the destructive action hasn't happened yet) — white background (`bg-surface`), `border-error`, `text-error`, hover: `bg-error-light`. Same inverse relationship as Secondary/Primary, but built on the error token. The dialog's actual confirm button (the one that fires the irreversible action) stays solid Destructive (`bg-error`, white text) — only the trigger that opens the dialog is outlined, so the visual weight still ramps up as the user gets closer to the irreversible step.
+
+**Implementation note:** never build Secondary (or the outlined Destructive trigger) by passing shadcn's `variant="outline"` and overriding `className` — that variant carries `hover:text-foreground`/`dark:bg-input` classes in a different Tailwind variant scope than a color-only `className` override, so they survive unintentionally and fire on hover (this shipped as a real bug once — buttons flashed a muted white/black-text state on hover). Instead, omit `variant` (defaults to the plain `default` variant) and fully specify the look via `className`, e.g. `border-accent bg-surface text-accent hover:bg-accent-light` (Secondary) or `border-error bg-surface text-error hover:bg-error-light` (outlined Destructive trigger) — same pattern already used for Primary buttons in this codebase.
 
 ---
 
