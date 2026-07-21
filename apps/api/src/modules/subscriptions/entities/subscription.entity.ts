@@ -11,11 +11,7 @@ import { User } from '@/modules/users/entities/user.entity';
 
 export type BillingCycle = 'weekly' | 'monthly' | 'yearly' | 'custom';
 export type SubscriptionCategory =
-  | 'entertainment'
-  | 'software'
-  | 'fitness'
-  | 'utilities'
-  | 'other';
+  'entertainment' | 'software' | 'fitness' | 'utilities' | 'other';
 export type SubscriptionStatus = 'active' | 'cancelled';
 
 @Entity('subscriptions')
