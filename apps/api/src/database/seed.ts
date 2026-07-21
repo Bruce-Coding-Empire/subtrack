@@ -100,7 +100,9 @@ async function seed(): Promise<void> {
   const userRepo = AppDataSource.getRepository(User);
   const subscriptionRepo = AppDataSource.getRepository(Subscription);
 
-  const existing = await userRepo.findOne({ where: { email: SEED_USER_EMAIL } });
+  const existing = await userRepo.findOne({
+    where: { email: SEED_USER_EMAIL },
+  });
   if (existing) {
     await subscriptionRepo.delete({ userId: existing.id });
     await userRepo.delete({ id: existing.id });
@@ -118,11 +120,17 @@ async function seed(): Promise<void> {
 
   await subscriptionRepo.save(
     seedSubscriptions.map((subscription) =>
-      subscriptionRepo.create({ ...subscription, userId: user.id, status: 'active' }),
+      subscriptionRepo.create({
+        ...subscription,
+        userId: user.id,
+        status: 'active',
+      }),
     ),
   );
 
-  console.log(`Seeded user ${user.email} with ${seedSubscriptions.length} subscriptions.`);
+  console.log(
+    `Seeded user ${user.email} with ${seedSubscriptions.length} subscriptions.`,
+  );
   await AppDataSource.destroy();
 }
 
