@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This is the entry point. Any AI agent working on SubTrack — Claude Code or otherwise — reads this file first, at the start of every session.
 
@@ -26,6 +26,7 @@ Three apps in this monorepo:
 6. `context/code-standards.md` — conventions for whichever app(s) the current feature touches.
 7. `context/ui-tokens.md` + `context/ui-rules.md` + `context/ui-registry.md` — before building or touching any UI, on either platform.
 8. `context/library-docs.md` — before using any third party library, check here for project-specific patterns first.
+9. `context/git-workflow.md` — before creating a branch or committing, check branch naming and commit conventions here.
 
 ---
 
