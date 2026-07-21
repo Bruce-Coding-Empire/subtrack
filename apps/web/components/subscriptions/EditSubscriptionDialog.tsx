@@ -6,23 +6,47 @@ import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SubscriptionForm, type SubscriptionFormValues } from "@/components/subscriptions/SubscriptionForm";
+import { updateSubscription } from "@/lib/subscriptions";
 import type { Subscription } from "@/types";
 
 type Props = {
   subscription: Subscription;
-  onSave: (values: SubscriptionFormValues) => void;
+  onSaved: (subscription: Subscription) => void;
 };
 
-export function EditSubscriptionDialog({ subscription, onSave }: Props) {
+export function EditSubscriptionDialog({ subscription, onSaved }: Props) {
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  function handleSubmit(values: SubscriptionFormValues) {
-    onSave(values);
+  async function handleSubmit(values: SubscriptionFormValues) {
+    setFormError(null);
+    const result = await updateSubscription(subscription.id, {
+      name: values.name,
+      cost: values.cost,
+      currency: values.currency,
+      billingCycle: values.billingCycle,
+      customIntervalDays: values.billingCycle === "custom" ? (values.customIntervalDays ?? null) : null,
+      category: values.category,
+      startDate: values.startDate,
+    });
+
+    if (!result.success || !result.data) {
+      setFormError(result.error ?? "Failed to save changes — please try again");
+      return;
+    }
+
     setOpen(false);
+    onSaved(result.data);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setFormError(null);
+      }}
+    >
       <Button
         variant="outline"
         onClick={() => setOpen(true)}
@@ -48,6 +72,7 @@ export function EditSubscriptionDialog({ subscription, onSave }: Props) {
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
           submitLabel="Save Changes"
+          formError={formError}
         />
       </DialogContent>
     </Dialog>

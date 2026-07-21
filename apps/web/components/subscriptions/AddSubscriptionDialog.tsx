@@ -6,35 +6,45 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SubscriptionForm, type SubscriptionFormValues } from "@/components/subscriptions/SubscriptionForm";
-import type { Subscription } from "@/types";
+import { createSubscription } from "@/lib/subscriptions";
 
 type Props = {
-  onCreate: (subscription: Subscription) => void;
+  onCreated: () => void;
 };
 
-export function AddSubscriptionDialog({ onCreate }: Props) {
+export function AddSubscriptionDialog({ onCreated }: Props) {
   const [open, setOpen] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  function handleSubmit(values: SubscriptionFormValues) {
-    const subscription: Subscription = {
-      id: crypto.randomUUID(),
+  async function handleSubmit(values: SubscriptionFormValues) {
+    setFormError(null);
+    const result = await createSubscription({
       name: values.name,
       cost: values.cost,
       currency: values.currency,
       billingCycle: values.billingCycle,
       customIntervalDays: values.billingCycle === "custom" ? (values.customIntervalDays ?? null) : null,
       category: values.category,
-      status: "active",
       startDate: values.startDate,
-      nextRenewalDate: values.startDate,
-    };
+    });
 
-    onCreate(subscription);
+    if (!result.success) {
+      setFormError(result.error ?? "Failed to create subscription — please try again");
+      return;
+    }
+
     setOpen(false);
+    onCreated();
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) setFormError(null);
+      }}
+    >
       <Button onClick={() => setOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent-dark">
         <Plus className="size-4" />
         Add Subscription
@@ -43,7 +53,12 @@ export function AddSubscriptionDialog({ onCreate }: Props) {
         <DialogHeader>
           <DialogTitle>Add Subscription</DialogTitle>
         </DialogHeader>
-        <SubscriptionForm onSubmit={handleSubmit} onCancel={() => setOpen(false)} submitLabel="Add Subscription" />
+        <SubscriptionForm
+          onSubmit={handleSubmit}
+          onCancel={() => setOpen(false)}
+          submitLabel="Add Subscription"
+          formError={formError}
+        />
       </DialogContent>
     </Dialog>
   );

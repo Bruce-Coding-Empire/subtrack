@@ -1,48 +1,66 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AddSubscriptionDialog } from "@/components/subscriptions/AddSubscriptionDialog";
 import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilters";
 import { SubscriptionsPagination } from "@/components/subscriptions/SubscriptionsPagination";
 import { SubscriptionsTable } from "@/components/subscriptions/SubscriptionsTable";
+import { listSubscriptions } from "@/lib/subscriptions";
 import type { Subscription, SubscriptionStatus } from "@/types";
 
 type StatusFilter = SubscriptionStatus | "all";
 
 const DEFAULT_PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 300;
 
-type Props = {
-  initialSubscriptions: Subscription[];
-};
-
-export function SubscriptionsPageClient({ initialSubscriptions }: Props) {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(initialSubscriptions);
+export function SubscriptionsPageClient() {
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredSubscriptions = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return subscriptions.filter((subscription) => {
-      const matchesStatus = status === "all" || subscription.status === status;
-      const matchesSearch = query.length === 0 || subscription.name.toLowerCase().includes(query);
-      return matchesStatus && matchesSearch;
-    });
-  }, [subscriptions, search, status]);
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSubscriptions.length / DEFAULT_PAGE_SIZE));
+  useEffect(() => {
+    let cancelled = false;
 
-  const paginatedSubscriptions = useMemo(() => {
-    const start = (page - 1) * DEFAULT_PAGE_SIZE;
-    return filteredSubscriptions.slice(start, start + DEFAULT_PAGE_SIZE);
-  }, [filteredSubscriptions, page]);
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      const result = await listSubscriptions({
+        status: status === "all" ? undefined : status,
+        search: debouncedSearch || undefined,
+        page,
+        limit: DEFAULT_PAGE_SIZE,
+      });
+      if (cancelled) return;
 
-  function handleCreate(subscription: Subscription) {
-    setSubscriptions((current) => [subscription, ...current]);
-    setPage(1);
-  }
+      if (result.success && result.data) {
+        setSubscriptions(result.data.items);
+        setTotal(result.data.total);
+      } else {
+        setError(result.error ?? "Failed to load subscriptions — please try again");
+      }
+      setIsLoading(false);
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [status, debouncedSearch, page, refreshToken]);
+
+  const totalPages = Math.max(1, Math.ceil(total / DEFAULT_PAGE_SIZE));
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -54,11 +72,16 @@ export function SubscriptionsPageClient({ initialSubscriptions }: Props) {
     setPage(1);
   }
 
+  function handleCreated() {
+    setPage(1);
+    setRefreshToken((token) => token + 1);
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-base font-semibold text-text-primary">Subscriptions</h1>
-        <AddSubscriptionDialog onCreate={handleCreate} />
+        <AddSubscriptionDialog onCreated={handleCreated} />
       </div>
 
       <Card>
@@ -69,9 +92,15 @@ export function SubscriptionsPageClient({ initialSubscriptions }: Props) {
             status={status}
             onStatusChange={handleStatusChange}
           />
-          <SubscriptionsTable subscriptions={paginatedSubscriptions} />
+          {error ? (
+            <p className="py-16 text-center text-sm text-error">{error}</p>
+          ) : isLoading ? (
+            <p className="py-16 text-center text-sm text-text-muted">Loading subscriptions…</p>
+          ) : (
+            <SubscriptionsTable subscriptions={subscriptions} />
+          )}
         </CardContent>
-        {totalPages > 1 && (
+        {!error && !isLoading && totalPages > 1 && (
           <CardFooter className="border-t border-border">
             <SubscriptionsPagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </CardFooter>

@@ -53,3 +53,15 @@ export type PaginatedSubscriptions = {
   page: number;
   limit: number;
 };
+
+export type CreateSubscriptionInput = {
+  name: string;
+  cost: number;
+  currency: string;
+  billingCycle: BillingCycle;
+  customIntervalDays: number | null;
+  category: SubscriptionCategory;
+  startDate: string;
+};
+
+export type UpdateSubscriptionInput = Partial<CreateSubscriptionInput>;

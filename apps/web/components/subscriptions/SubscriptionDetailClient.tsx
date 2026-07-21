@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { notFound, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -10,33 +11,71 @@ import { StatusBadge } from "@/components/subscriptions/StatusBadge";
 import { RenewalUrgencyPill } from "@/components/subscriptions/RenewalUrgencyPill";
 import { PaymentHistoryList } from "@/components/subscriptions/PaymentHistoryList";
 import { EditSubscriptionDialog } from "@/components/subscriptions/EditSubscriptionDialog";
-import type { SubscriptionFormValues } from "@/components/subscriptions/SubscriptionForm";
+import { CancelSubscriptionDialog } from "@/components/subscriptions/CancelSubscriptionDialog";
+import { DeleteSubscriptionDialog } from "@/components/subscriptions/DeleteSubscriptionDialog";
 import { formatBillingCycle, formatCurrency, formatDate } from "@/lib/format";
+import { getSubscription } from "@/lib/subscriptions";
 import type { SubscriptionDetail } from "@/types";
 
 type Props = {
-  subscription: SubscriptionDetail;
+  id: string;
 };
 
-export function SubscriptionDetailClient({ subscription: initialSubscription }: Props) {
-  const [subscription, setSubscription] = useState(initialSubscription);
+export function SubscriptionDetailClient({ id }: Props) {
+  const router = useRouter();
+  const [subscription, setSubscription] = useState<SubscriptionDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isNotFound, setIsNotFound] = useState(false);
 
-  function handleSave(values: SubscriptionFormValues) {
-    setSubscription((current) => ({
-      ...current,
-      name: values.name,
-      cost: values.cost,
-      currency: values.currency,
-      billingCycle: values.billingCycle,
-      customIntervalDays: values.billingCycle === "custom" ? (values.customIntervalDays ?? null) : null,
-      category: values.category,
-      startDate: values.startDate,
-    }));
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      const result = await getSubscription(id);
+      if (cancelled) return;
+
+      if (result.success && result.data) {
+        setSubscription(result.data);
+        document.title = `${result.data.name} - SubTrack`;
+      } else if (result.error === "Subscription not found") {
+        setIsNotFound(true);
+      } else {
+        setError(result.error ?? "Failed to load subscription — please try again");
+      }
+      setIsLoading(false);
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (isNotFound) {
+    notFound();
+  }
+
+  if (isLoading) {
+    return <p className="mx-auto w-full max-w-7xl p-8 text-center text-sm text-text-muted">Loading subscription…</p>;
+  }
+
+  if (error || !subscription) {
+    return (
+      <p className="mx-auto w-full max-w-7xl p-8 text-center text-sm text-error">
+        {error ?? "Subscription not found"}
+      </p>
+    );
   }
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
-      <Link href="/subscriptions" className="flex w-fit items-center gap-1 text-sm font-medium text-text-secondary hover:text-text-primary">
+      <Link
+        href="/subscriptions"
+        className="flex w-fit items-center gap-1 text-sm font-medium text-text-secondary hover:text-text-primary"
+      >
         <ArrowLeft className="size-4" />
         Back to Subscriptions
       </Link>
@@ -47,7 +86,21 @@ export function SubscriptionDetailClient({ subscription: initialSubscription }: 
           <CategoryBadge category={subscription.category} />
           <StatusBadge status={subscription.status} />
         </div>
-        <EditSubscriptionDialog subscription={subscription} onSave={handleSave} />
+        <div className="flex flex-wrap items-center gap-2">
+          <EditSubscriptionDialog
+            subscription={subscription}
+            onSaved={(updated) => setSubscription((current) => (current ? { ...current, ...updated } : current))}
+          />
+          {subscription.status === "active" && (
+            <CancelSubscriptionDialog
+              subscriptionId={subscription.id}
+              onCancelled={(updated) =>
+                setSubscription((current) => (current ? { ...current, ...updated } : current))
+              }
+            />
+          )}
+          <DeleteSubscriptionDialog subscriptionId={subscription.id} onDeleted={() => router.push("/subscriptions")} />
+        </div>
       </div>
 
       <Card>
