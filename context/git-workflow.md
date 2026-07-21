@@ -78,61 +78,8 @@ main
  └── feat/03-auth-api        (branch off main)
       → work, commit as you go
       → push
-      → merge back to main (squash merge — see below)
- └── feat/04-auth-web-ui     (branch off updated main)
-      ...
 ```
 
 1. **Branch off `main`** for every feature, named per the convention above
 2. **Commit as you go** — don't wait until a feature is fully done to make your first commit; small, logical commits are easier to review and revert
-3. **Before merging:** update `progress-tracker.md` — check off the feature, update "Last completed" / "Next", add any decisions made to "Decisions Made During Build". This update is part of the same branch, not a separate one.
-4. **Merge to `main` via squash merge** (see below)
-5. **Delete the branch** after merging — keep the branch list clean
-
-### Why Squash Merge
-
-Solo project, so there's no review-comment history worth preserving per-commit. Squash merging means `main`'s history reads as one clean commit per feature — exactly matching the numbered list in `build-plan.md`. Anyone (including a hiring manager) browsing `main`'s log sees a readable feature-by-feature build history instead of a wall of "wip", "fix typo", "actually fix it" commits.
-
-```powershell
-# On GitHub: when merging a PR, choose "Squash and merge"
-# Locally, equivalent:
-git checkout main
-git merge --squash feat/03-auth-api
-git commit -m "feat(api): add auth module with register, login, refresh"
-git branch -d feat/03-auth-api
-```
-
-The squashed commit message should read like a mini version of the feature's entry in `build-plan.md`, not like the last WIP commit you happened to make.
-
----
-
-## Pull Requests
-
-Even solo, open a PR per feature branch rather than merging directly — it's a natural checkpoint to re-read your own diff before it lands in `main`, and it gives the repo a visible PR history, which is itself something a reviewer might glance at.
-
-**PR title:** same as the eventual squash commit message — `feat(api): add auth module with register, login, refresh`
-
-**PR description template:**
-
-```markdown
-## What
-Brief description of what this branch adds/changes.
-
-## Build plan reference
-Feature 03 — Auth API
-
-## Testing
-How this was verified (manual test steps, Swagger UI check, etc.)
-```
-
----
-
-## When Work Spans Multiple Apps
-
-Some features (e.g. "add name field" from earlier in this project) touch `context/`, `apps/api`, and `apps/web` in one logical change. Keep this as **one branch, one PR** — e.g. `feat/add-user-display-name` — with commits scoped per app inside it if it's cleaner to separate them, but don't split it into three separate PRs that have to land in a specific order. That's exactly the coordination problem a monorepo is meant to solve.
-
----
-
-## `main` Is Always Deployable
-
-Never merge a branch into `main` that leaves the app in a broken state — if a feature is genuinely half-done at a natural stopping point, keep it on its branch rather than merging incomplete work. `progress-tracker.md` reflects what's actually in `main`, not what's in progress on a branch.
+3. **Push** the branch once it's ready
