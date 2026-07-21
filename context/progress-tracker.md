@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 1 — Foundation
-**Last completed:** 02 Database Schema + Migrations
-**Next:** 03 Auth — API
+**Last completed:** 03 Auth — API
+**Next:** 04 Auth — Web UI + Wiring
 
 ---
 
@@ -18,7 +18,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 01 Monorepo + Tooling Setup
 - [x] 02 Database Schema + Migrations
-- [ ] 03 Auth — API
+- [x] 03 Auth — API
 - [ ] 04 Auth — Web UI + Wiring
 
 ### Phase 2 — Subscriptions Core
@@ -68,6 +68,14 @@ Update this file after every completed feature. Any AI agent reading this should
 - Local Postgres runs as an already-installed Windows service (`postgresql-x64-18`, verified via `Get-Service`), not Docker — no `docker-compose.yml` needed for this project. The `subtrack` database didn't exist yet and was created manually via `psql -U postgres -c "CREATE DATABASE subtrack;"` before running migrations.
 - Dev seed script (`apps/api/src/database/seed.ts`, run via `npm run seed`) creates one test user (`test@subtrack.dev` / `Password123!`, bcrypt-hashed at 10 rounds per `library-docs.md`) and 7 subscriptions spanning all 5 categories and 3 currencies (USD, RWF, EUR), covering weekly/monthly/yearly/custom-adjacent cycles. `start_date`/`next_renewal_date` are hardcoded fixture values rather than computed — `billing-cycle.util.ts` doesn't exist until feature 05, and this is one-off seed data rather than a runtime calculation path, so the "`next_renewal_date` only via `billing-cycle.util.ts`" invariant (which governs application code) doesn't apply here. Script is idempotent — deletes any existing seeded user (and their subscriptions) by email before inserting, safe to re-run.
 - Installed `bcrypt` (+ `@types/bcrypt`) now rather than deferring to feature 03, since the seed script needed a real password hash for the test user to be usable once Auth API lands. Already on the approved dependency list in `code-standards.md`.
+- **03 Auth — API.** Installed `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt` (+ `@types/passport-jwt`) — all on the approved list except bare `passport`, which is an unavoidable peer dependency of the other two, not a discretionary addition. Also installed `@nestjs/swagger` here (moved up from its own placeholder — see below) since feature 03 is where the build plan says the Swagger bootstrap and first decorated controller happen together.
+- `api-contract.md`'s documented register/login response was missing `refreshToken` in the body, but `library-docs.md`'s Nest Passport + JWT rules explicitly require it there for mobile (no cookies to rely on). Updated `api-contract.md` first (per its own "update the contract file first" rule) to include `refreshToken` in the response `data`, with a note that web ignores the body copy and relies on the httpOnly cookie instead — mobile's `expo-secure-store` persistence (feature 14) is the only consumer of that field.
+- Skipped the `cookie-parser` package for reading the refresh token off the web request in `POST /auth/refresh` — it's not on the approved dependency list in `code-standards.md`, and Express's `res.cookie()` (used to *set* the httpOnly cookie) doesn't require it. Wrote a ~10-line manual parser (`common/utils/cookie.util.ts`) instead, consistent with this project's existing preference for hand-rolled solutions over new dependencies for trivial needs (see the `SnakeNamingStrategy` decision above).
+- `main.ts`'s Swagger setup (added in an earlier session, ahead of this feature) used path `docs` with no production gate. Corrected to match `library-docs.md` exactly: mounted at `api/docs`, wrapped in `if (process.env.NODE_ENV !== 'production')`. Also added the global `ValidationPipe` (`whitelist`, `forbidNonWhitelisted`, `transform`) and a global `common/filters/http-exception.filter.ts` here, since `03 Auth — API` is the first feature with DTOs/endpoints to validate and error-format.
+- `common/filters/http-exception.filter.ts` uses `@Catch()` (not `@Catch(HttpException)`) so *every* unhandled error — not just ones we explicitly throw — gets converted to the `{ success: false, error }` shape `api-contract.md` mandates, including framework-level 404s for unmatched routes. Non-`HttpException` errors are logged with `Logger.error` and collapsed to a generic "Internal server error" message, per `code-standards.md`'s "never expose internals" rule.
+- Logout has no server-side token invalidation — `architecture.md`'s schema has no refresh-token/blacklist table, and adding one wasn't in scope for this feature. Web logout clears the httpOnly cookie; mobile logout is a client-side `SecureStore.deleteItemAsync` (per `library-docs.md`), already documented as the mobile pattern. Revisit only if a future feature explicitly calls for server-side revocation.
+- All four endpoints (`register`, `login`, `refresh`, `logout`) verified end-to-end against a live `nest start --watch` instance and the real local Postgres DB — not just `tsc`/lint: register → 201, login/refresh/logout → 200 (Nest defaults `@Post()` to 201, so `@HttpCode(HttpStatus.OK)` was added explicitly to the three non-creation endpoints), wrong password and missing/garbage refresh tokens → 401, duplicate email → 409, invalid DTO body → 400, unauthenticated logout → 401, unknown route → 404 — all in the `{ success, data?, error? }` shape.
+- Nest's `start:dev` (`nest start --watch`) on this Windows setup occasionally spawns a new child process on file-change recompiles before the previous one has released port 3001, so a few `EADDRINUSE` crashes appear in dev server logs around rapid successive edits. The newest process always wins the port and serves correctly (verified — no functional impact), it's just log noise. Not investigated further since it's a local dev-tooling quirk unrelated to app code.
 
 ---
 

@@ -5,6 +5,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SnakeNamingStrategy } from '@/common/utils/snake-naming.strategy';
 import { entities } from '@/database/entities';
+import { AuthModule } from '@/modules/auth/auth.module';
+import { UsersModule } from '@/modules/users/users.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { entities } from '@/database/entities';
         synchronize: false,
       }),
     }),
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

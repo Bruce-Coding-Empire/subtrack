@@ -18,9 +18,9 @@ Request:
 ```
 Response:
 ```json
-{ "success": true, "data": { "accessToken": "string", "user": { "id": "uuid", "name": "string", "email": "string", "baseCurrency": "RWF" } } }
+{ "success": true, "data": { "accessToken": "string", "refreshToken": "string", "user": { "id": "uuid", "name": "string", "email": "string", "baseCurrency": "RWF" } } }
 ```
-`name` is required — validated as non-empty, max 100 characters. Refresh token set as httpOnly cookie. Not authenticated.
+`name` is required — validated as non-empty, max 100 characters. Refresh token set as httpOnly cookie AND returned in the body — web ignores the body copy (relies on the cookie, never persists it in JS-reachable storage per `code-standards.md`), mobile has no cookies so the body copy is its only delivery mechanism and gets stored in `expo-secure-store`. Not authenticated.
 
 ### `POST /auth/login`
 

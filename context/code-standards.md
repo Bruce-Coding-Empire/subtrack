@@ -270,6 +270,7 @@ async function apiFetch<T>(
 | `DATABASE_URL`            | apps/api             | Postgres connection string        |
 | `JWT_ACCESS_SECRET`       | apps/api             |                                    |
 | `JWT_REFRESH_SECRET`      | apps/api             |                                    |
+| `REFRESH_TOKEN_MAX_AGE_MS` | apps/api             | Refresh cookie lifetime in ms — must match the refresh JWT's `expiresIn` ("7d") in `auth.service.ts` |
 | `EXCHANGE_RATE_API_URL`   | apps/api             | exchangerate.host base URL        |
 | `NEXT_PUBLIC_API_URL`     | apps/web             | Exposed to browser — API base URL |
 | `EXPO_PUBLIC_API_URL`     | apps/mobile           | Exposed to app bundle — API base URL |
@@ -312,7 +313,7 @@ Never install a package without a clear reason. Check first:
 
 Approved dependencies:
 
-**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`
+**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`
 
 **apps/web:** `tailwindcss`, `shadcn/ui` components, `recharts`, `lucide-react`, `zod` (form validation)
 
