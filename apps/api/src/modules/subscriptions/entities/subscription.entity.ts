@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '@/modules/users/entities/user.entity';
+import { numericTransformer } from '@/common/utils/numeric.transformer';
 
 export type BillingCycle = 'weekly' | 'monthly' | 'yearly' | 'custom';
 export type SubscriptionCategory =
@@ -26,7 +27,7 @@ export class Subscription {
   @Column()
   name: string;
 
-  @Column('numeric')
+  @Column('numeric', { transformer: numericTransformer })
   cost: number;
 
   @Column()

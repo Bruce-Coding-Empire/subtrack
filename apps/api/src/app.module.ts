@@ -7,6 +7,7 @@ import { SnakeNamingStrategy } from '@/common/utils/snake-naming.strategy';
 import { entities } from '@/database/entities';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
+import { SubscriptionsModule } from '@/modules/subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { UsersModule } from '@/modules/users/users.module';
     }),
     AuthModule,
     UsersModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
