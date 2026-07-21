@@ -55,7 +55,7 @@ export function SubscriptionsPageClient({ initialSubscriptions }: Props) {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 p-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-base font-semibold text-text-primary">Subscriptions</h1>
         <AddSubscriptionDialog onCreate={handleCreate} />

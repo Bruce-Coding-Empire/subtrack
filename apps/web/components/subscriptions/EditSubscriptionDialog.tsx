@@ -23,7 +23,11 @@ export function EditSubscriptionDialog({ subscription, onSave }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="outline" onClick={() => setOpen(true)}>
+      <Button
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="border-border bg-accent text-surface hover:bg-accent-dark hover:text-surface-secondary"
+      >
         <Pencil className="size-4" />
         Edit
       </Button>
