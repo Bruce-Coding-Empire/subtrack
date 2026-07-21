@@ -32,13 +32,16 @@ Three apps in this monorepo:
 
 ## Installed Skills
 
-_No skills installed yet. When a skill is added for a library (TypeORM, Nest, Expo, exchangerate.host, etc.), list it here with a one-line description of what it covers, per the authority order in `library-docs.md`._
+- **`apps/api:typeorm-migrations`** (`apps/api/.claude/skills/typeorm-migrations/`) — migration workflow commands plus this project's TypeORM/Windows-specific gotchas (`uuid-ossp`, `SnakeNamingStrategy`, centralized entity list, `tsconfig-paths` fix for the CLI, hand-added expression indexes). Use when generating/running/reverting a migration or adding an entity.
 
 ---
 
 ## MCP Servers
 
-_None configured yet. If a database, GitHub, or API-specific MCP server is added, list it here with what it's used for._
+Configured in `.mcp.json` at the repo root (project-scoped, shared via git):
+
+- **postgres** (`@hovecapital/read-only-postgres-mcp-server`) — read-only SQL access to the local `subtrack` Postgres database (schema inspection, ad-hoc SELECT queries against seeded/migrated data). Enforces read-only at the query-validation level (SELECT only). Reads `DB_HOST`/`DB_PORT`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD` from the shell environment (defaults match `apps/api/.env.example`; export `DB_PASSWORD` — and any others that differ from your local `apps/api/.env` — before starting Claude Code).
+- **context7** (`@upstash/context7-mcp`) — real-time, version-specific docs for third-party libraries (TypeORM, NestJS, Expo, etc.), per the authority order in `library-docs.md`. Works anonymously out of the box; set `CONTEXT7_API_KEY` for higher rate limits.
 
 ---
 

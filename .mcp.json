@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@hovecapital/read-only-postgres-mcp-server"],
+      "env": {
+        "DB_HOST": "${DB_HOST:-localhost}",
+        "DB_PORT": "${DB_PORT:-5432}",
+        "DB_DATABASE": "${DB_DATABASE:-subtrack}",
+        "DB_USERNAME": "${DB_USERNAME:-postgres}",
+        "DB_PASSWORD": "${DB_PASSWORD:-root}"
+      }
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
