@@ -39,12 +39,13 @@ export type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 type Props = {
   defaultValues?: Partial<SubscriptionFormValues>;
-  onSubmit: (values: SubscriptionFormValues) => void;
+  onSubmit: (values: SubscriptionFormValues) => void | Promise<void>;
   onCancel?: () => void;
   submitLabel: string;
+  formError?: string | null;
 };
 
-export function SubscriptionForm({ defaultValues, onSubmit, onCancel, submitLabel }: Props) {
+export function SubscriptionForm({ defaultValues, onSubmit, onCancel, submitLabel, formError }: Props) {
   const form = useForm<SubscriptionFormValues>({
     resolver: zodResolver(subscriptionFormSchema),
     defaultValues: {
@@ -228,6 +229,12 @@ export function SubscriptionForm({ defaultValues, onSubmit, onCancel, submitLabe
             </FormItem>
           )}
         />
+
+        {formError && (
+          <p role="alert" className="text-xs text-error">
+            {formError}
+          </p>
+        )}
 
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
           {onCancel && (
