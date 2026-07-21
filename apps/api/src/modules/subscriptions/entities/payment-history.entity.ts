@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Subscription } from './subscription.entity';
 import { User } from '@/modules/users/entities/user.entity';
+import { numericTransformer } from '@/common/utils/numeric.transformer';
 
 @Entity('payment_history')
 export class PaymentHistory {
@@ -23,7 +24,7 @@ export class PaymentHistory {
   @Column()
   userId: string;
 
-  @Column('numeric')
+  @Column('numeric', { transformer: numericTransformer })
   amount: number;
 
   @Column()
