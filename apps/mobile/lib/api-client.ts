@@ -1,4 +1,10 @@
-import { getAccessToken, refreshAccessToken } from "@/lib/auth";
+import {
+  clearSession,
+  getAccessToken,
+  getStoredRefreshToken,
+  notifySessionInvalidated,
+  setAccessToken,
+} from "@/lib/token-store";
 import type { ApiResponse } from "@/lib/types";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -18,6 +24,33 @@ async function rawFetch<T>(
   });
   const body = (await res.json()) as ApiResponse<T>;
   return { status: res.status, body };
+}
+
+// Uses rawFetch directly rather than apiFetch: apiFetch calls this on a 401
+// to retry, so going through apiFetch here would recurse.
+export async function refreshAccessToken(): Promise<boolean> {
+  try {
+    const refreshToken = await getStoredRefreshToken();
+    if (!refreshToken) {
+      return false;
+    }
+
+    const { body: result } = await rawFetch<{ accessToken: string }>("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!result.success || !result.data) {
+      await clearSession();
+      notifySessionInvalidated();
+      return false;
+    }
+
+    setAccessToken(result.data.accessToken);
+    return true;
+  } catch (error) {
+    console.error("[refreshAccessToken]", error);
+    return false;
+  }
 }
 
 export async function apiFetch<T>(
