@@ -7,6 +7,15 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      // Inter ships as separate static weight files (no variable font), so
+      // React Native needs a distinct fontFamily per weight rather than the
+      // web's single --font-sans + font-weight utility approach.
+      fontFamily: {
+        sans: ["Inter_400Regular"],
+        "sans-medium": ["Inter_500Medium"],
+        "sans-semibold": ["Inter_600SemiBold"],
+        "sans-bold": ["Inter_700Bold"],
+      },
       colors: {
         background: "#f6f8f7",
         surface: "#ffffff",
@@ -18,6 +27,7 @@ module.exports = {
         accent: "#0f9d78",
         "accent-dark": "#0b7a5c",
         "accent-light": "#e3f6ee",
+        "accent-foreground": "#ffffff",
         success: "#16a34a",
         "success-light": "#dcfce7",
         warning: "#f59e0b",
