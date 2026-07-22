@@ -11,7 +11,7 @@
 | ORM                 | TypeORM                     | Entities, migrations, repositories                |
 | Auth                | Nest Passport + JWT         | Self-rolled — access + refresh tokens             |
 | Scheduled jobs      | `@nestjs/schedule`           | Renewal advancement, exchange rate refresh        |
-| Currency data       | exchangerate.host            | Free FX rates, cached in DB                        |
+| Currency data       | open.er-api.com               | Free, keyless FX rates (full ISO 4217 incl. RWF), cached in DB |
 | Web charts          | Recharts                    | Dashboard visualizations                          |
 | Mobile charts       | react-native-chart-kit      | Dashboard visualizations                           |
 | Web styling         | Tailwind CSS v4 + shadcn/ui | UI components                                      |

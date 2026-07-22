@@ -178,9 +178,11 @@ async refreshRates() { /* fetch + upsert into exchange_rates */ }
 
 ---
 
-## exchangerate.host (apps/api)
+## open.er-api.com (apps/api)
 
 **Check first:** AGENTS.md for an installed FX API skill or MCP.
+
+**Swapped from exchangerate.host (originally documented here) during feature 09** — that provider now requires a paid/keyed access token (`missing_access_key` on every request, confirmed live). `open.er-api.com` is the free, keyless open-access tier of the same exchangerate-api.com data, with full ISO 4217 coverage including RWF (this app's default `base_currency` — verified live, `exchangerate.host`'s replacement candidate Frankfurter was ruled out for lacking RWF entirely).
 
 ### Fetching Rates
 
@@ -188,17 +190,25 @@ async refreshRates() { /* fetch + upsert into exchange_rates */ }
 // modules/currency/currency.service.ts
 async fetchLatestRates(base: string): Promise<Record<string, number>> {
   const response = await fetch(
-    `${process.env.EXCHANGE_RATE_API_URL}/latest?base=${base}`,
+    `${process.env.EXCHANGE_RATE_API_URL}/latest/${base}`,
   );
   if (!response.ok) {
     throw new Error(`Exchange rate API error: ${response.status}`);
   }
   const data = await response.json();
+  // API-level failures (e.g. unsupported currency) come back as HTTP 200
+  // with `{ result: "error", "error-type": "..." }` — check `result`, not
+  // just `response.ok`.
+  if (data.result !== 'success') {
+    throw new Error(`Exchange rate API error: ${data['error-type']}`);
+  }
   return data.rates; // { USD: 1, RWF: 1450.2, EUR: 0.92, ... }
 }
 ```
 
 ### Caching Pattern
+
+`exchange_rates`'s unique index is `(base_currency, target_currency, (fetched_at::date))` — an **expression** index (the date-cast on `fetched_at`). TypeORM 1.x's type-safe `repository.upsert()`/`orUpdate()` can only target a plain-column constraint, and the raw-string `onConflict()` escape hatch was removed in TypeORM 1.x (see its `upgrading-from-0.3` guide) — so a hand-written parameterized query is the only way left to hit that exact arbiter index:
 
 ```typescript
 // Called only from exchange-rate.job.ts, never from a request path
@@ -207,9 +217,12 @@ async refreshAndCache(): Promise<void> {
   for (const base of currencies) {
     const rates = await this.fetchLatestRates(base);
     for (const [target, rate] of Object.entries(rates)) {
-      await this.exchangeRateRepo.upsert(
-        { baseCurrency: base, targetCurrency: target, rate, fetchedAt: new Date() },
-        ["baseCurrency", "targetCurrency"],
+      await this.exchangeRateRepo.manager.query(
+        `INSERT INTO exchange_rates (base_currency, target_currency, rate, fetched_at)
+         VALUES ($1, $2, $3, now())
+         ON CONFLICT (base_currency, target_currency, ((fetched_at)::date))
+         DO UPDATE SET rate = EXCLUDED.rate, fetched_at = EXCLUDED.fetched_at`,
+        [base, target, rate],
       );
     }
   }

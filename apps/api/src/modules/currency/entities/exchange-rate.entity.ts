@@ -4,6 +4,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { numericTransformer } from '@/common/utils/numeric.transformer';
 
 @Entity('exchange_rates')
 export class ExchangeRate {
@@ -16,7 +17,7 @@ export class ExchangeRate {
   @Column()
   targetCurrency: string;
 
-  @Column('numeric')
+  @Column('numeric', { transformer: numericTransformer })
   rate: number;
 
   @CreateDateColumn()
