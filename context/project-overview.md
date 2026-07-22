@@ -148,9 +148,8 @@ Settings
 
 - Functional spend limits and over-limit warnings
 - Push notifications (renewal reminders, spend limit alerts)
-- Bank/email auto-detection of subscriptions
+- Email auto-detection of subscriptions (bank auto-detection is excluded outright — see `build-plan.md`'s v2 Roadmap)
 - Shared or team subscriptions
-- Multiple base currencies per user
 - Subscription pause (vs cancel)
 - Data export (CSV/PDF)
 - Social/sharing features

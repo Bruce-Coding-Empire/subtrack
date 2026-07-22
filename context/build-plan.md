@@ -217,11 +217,181 @@ For each app: UI built with mock data first, verified visually, then wired to th
 
 ---
 
-## v2 Roadmap (explicitly out of this build plan)
+## v2 Roadmap
 
-- Functional monthly spend limits with dashboard progress bar and over-limit state
-- Push notifications — renewal reminders and spend limit alerts, using the `notification_preferences` table already scaffolded in v1
-- Bank/email auto-detection of subscriptions
-- CSV/PDF export
-- Multi-currency base (per-portfolio rather than per-user)
-- Mobile tab bar true centering — with today's 4 items (Dashboard, Subscriptions, Add, Settings), the prominent "Add" button sits at the 3rd-of-4 slot (62.5% across), not visual center (50%), since 4 is an even count with no true middle column. Noted by the user as visually off during feature 15 testing. Once push notifications (above) lands, add a 5th tab (e.g. Alerts/Notifications) — Add becomes the true 3rd-of-5 center item at that point, so this resolves itself rather than needing a special-cased layout fix now.
+v1 (above) is complete and shipped. Nothing below is started or committed — these are full specs so a future session can pick one up and start building directly, the same level of detail as Phases 1–6, continuing the numbering from 18. Build order across phases matters: Phase 8 (push notifications) depends on Phase 7's spend-limit fields for its spend-limit-alert half; Phase 9 and 10 are independent of everything else and of each other.
+
+---
+
+## Phase 7 — Spend Limits (v2)
+
+`users.monthly_spend_limit` already exists in the v1 schema (scaffolded, unused) — no new table needed.
+
+### 18 Spend Limits API
+
+**Logic:**
+
+- `PATCH /users/me` accepts `monthlySpendLimit` (nullable numeric) alongside the existing name/base-currency fields
+- `GET /dashboard/summary` gains `spendLimit`, `currentMonthSpend`, `percentageUsed`, `isOverLimit` — computed from existing `payment_history` for the current calendar month, converted to base currency via the existing `CurrencyService`
+
+---
+
+### 19 Spend Limits — Web UI (mock data)
+
+**UI:**
+
+- Settings → "Monthly Spend Limit" section (scaffolded disabled in feature 13) becomes a real numeric input, "Coming in v2" badge removed
+- Dashboard gains a progress bar under the stat cards: under-limit (accent), ≥90% (warning), over-limit (destructive) — built against mock data first; no-limit-set state shows a "Set a monthly limit" CTA, not a zeroed bar
+
+---
+
+### 20 Spend Limits — Web Wiring
+
+**Logic:**
+
+- Settings save wired to `PATCH /users/me`
+- Dashboard progress bar wired to `GET /dashboard/summary`'s new fields, including the no-limit-set CTA state
+
+---
+
+### 21 Spend Limits — Mobile (UI + Wiring)
+
+**UI + Logic:**
+
+- Same un-scaffolding on mobile Settings (feature 17) and the same progress bar under the mobile dashboard's 2×2 stat grid (feature 16)
+- Wired directly to the same two endpoints as web — no separate mock-data step, matching how Phase 6 mobile features were built once the API already existed
+
+---
+
+## Phase 8 — Push Notifications (v2)
+
+`notification_preferences` table already exists (scaffolded in v1, currently unread/unwritten by any feature).
+
+### 22 Notification Preferences API
+
+**Logic:**
+
+- New `NotificationsModule` — `GET`/`PATCH /notifications/preferences` for `renewalRemindersEnabled` / `spendLimitAlertsEnabled`, `POST /notifications/push-token` to store the Expo push token
+- Reuses the existing `notification_preferences` table (currently modeled under `modules/users/entities/`, per the feature-02 decision recorded in `progress-tracker.md` — move it into this new module when built)
+- `architecture.md`'s monorepo tree doesn't list a `notifications` module yet — add it there when this is actually built, not before
+
+---
+
+### 23 Push Token Registration — Mobile
+
+**UI + Logic:**
+
+- New dependency: `expo-notifications` (not yet installed — add to `code-standards.md`'s approved list when built)
+- Permission prompt on first Settings/Alerts visit or app load; registers the device token via `POST /notifications/push-token`, skips re-registering if the stored token hasn't changed
+
+---
+
+### 24 Notification Preferences + Alerts Tab — Web + Mobile (UI + Wiring)
+
+**UI:**
+
+- Web: Settings → "Notifications" section (scaffolded disabled in feature 13) becomes live toggles
+- Mobile: notification toggles move off Settings into a new 5th tab bar item — `Dashboard`, `Subscriptions`, `Add`, `Alerts`, `Settings`. This is also what resolves the tab-bar centering issue noted during feature 15's testing (with 4 tabs, `Add` sat at the 3rd-of-4 slot — 62.5% across — not visual center; with 5 tabs it becomes the true 3rd-of-5 center item, so no special-cased layout fix is needed)
+
+**Logic:**
+
+- Both wired to `GET`/`PATCH /notifications/preferences`
+
+---
+
+### 25 Renewal + Spend-Limit Push Dispatch Job — API
+
+**Logic:**
+
+- New `NotificationDispatchJob` (`@nestjs/schedule`), runs daily after `renewal.job.ts`
+- Renewal reminders: subscriptions renewing within the next 3 days, for users with `renewalRemindersEnabled` and a stored push token
+- Spend-limit alerts: for users with `spendLimitAlertsEnabled`, checks whether an upcoming renewal would push `currentMonthSpend` over `monthlySpendLimit` (Phase 7)
+- Sends via `expo-server-sdk` (new dependency — add to `code-standards.md`'s approved list when built)
+- Manual trigger script for dev testing, same pattern as `renewal.job.ts` and `exchange-rate.job.ts`
+
+---
+
+## Phase 9 — Email Auto-Detection (v2)
+
+Gmail OAuth (read-only), decided when this was specced — bank auto-detection is excluded outright, not just deferred (see "Dropped From v2" below).
+
+### 26 Gmail Connection API
+
+**Logic:**
+
+- New `EmailIntegrationModule`. Google OAuth2, readonly Gmail scope — `GET /integrations/gmail/connect` (returns the consent URL), `GET /integrations/gmail/callback` (exchanges the code, stores encrypted tokens), `DELETE /integrations/gmail/disconnect`
+- New table: `email_connections` (`user_id`, `provider`, `access_token_encrypted`, `refresh_token_encrypted`, `connected_at`) — add to `architecture.md`'s schema and generate a migration when built
+- Requires a Google Cloud OAuth client (client ID/secret) — new env vars, not yet in `code-standards.md`'s env table
+
+---
+
+### 27 Email Scan + Parsing Job — API
+
+**Logic:**
+
+- `EmailScanJob` (daily) — for each connected user, fetches recent Gmail messages via the Gmail API, filters for subscription receipt/confirmation emails by sender/subject heuristics, parses vendor name / amount / currency / cycle where it can
+- Writes to a new staging table, `detected_subscriptions` (`status`: pending / approved / dismissed) — never creates a real `subscriptions` row directly; the user must confirm (feature 29)
+
+---
+
+### 28 Detected Subscriptions Review — Web UI (mock data)
+
+**UI:**
+
+- New section on `/subscriptions` (or a dedicated `/subscriptions/detected`) listing pending detected items with Approve/Dismiss actions — mock data first
+- Settings gains a "Connect Gmail" / "Disconnect" control
+
+---
+
+### 29 Detected Subscriptions Review — Web Wiring
+
+**Logic:**
+
+- Wired to `GET /integrations/detected`, `POST /integrations/detected/:id/approve` (creates a real subscription through the existing `subscriptions.service` create path), `POST /integrations/detected/:id/dismiss`
+- Settings' Gmail connect/disconnect control wired to the OAuth endpoints from feature 26
+- Mobile: not scoped here — OAuth consent is a web-browser-native flow; revisit only if mobile support is explicitly wanted later
+
+---
+
+## Phase 10 — Data Export (v2)
+
+### 30 Export API
+
+**Logic:**
+
+- `GET /export/subscriptions?format=csv|pdf`, `GET /export/payment-history?format=csv|pdf`
+- CSV: manual serialization, no new dependency
+- PDF: new dependency needed (e.g. `pdfkit`) — add to `code-standards.md`'s approved list when built
+
+---
+
+### 31 Export — Web UI + Wiring
+
+**UI:**
+
+- Export menu/button on `/subscriptions` — CSV or PDF, triggers a browser download
+
+**Logic:**
+
+- Wired to `GET /export/*`, streams the response as a file download
+- Mobile: not scoped here — file-download UX differs (share sheet, not a browser download); revisit separately if wanted
+
+---
+
+## v2 Feature Count
+
+| Phase                              | Features |
+| ------------------------------------- | ---------- |
+| Phase 7 — Spend Limits                   | 4          |
+| Phase 8 — Push Notifications                | 4          |
+| Phase 9 — Email Auto-Detection                 | 4          |
+| Phase 10 — Data Export                            | 2          |
+| **Total**                                                  | **14**     |
+
+---
+
+## Dropped From v2
+
+- **Multi-currency base (per-portfolio)** — considered, then dropped. No clear use case was identified, and "portfolio" wasn't a concept defined anywhere else in this project's docs.
+- **Bank auto-detection of subscriptions** — excluded outright, not deferred. See Phase 9's Gmail-only approach above; brokering or storing bank credentials/access tokens carries security and liability weight disproportionate to this project.
+- **Mobile tab bar true centering** — no longer a standalone concern; resolved as a side effect of feature 24's new 5th "Alerts" tab.
