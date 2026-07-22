@@ -16,3 +16,52 @@ export type AuthResponse = {
   refreshToken: string;
   user: User;
 };
+
+export type BillingCycle = "weekly" | "monthly" | "yearly" | "custom";
+
+export type SubscriptionCategory = "entertainment" | "software" | "fitness" | "utilities" | "other";
+
+export type SubscriptionStatus = "active" | "cancelled";
+
+export type Subscription = {
+  id: string;
+  name: string;
+  cost: number;
+  currency: string;
+  billingCycle: BillingCycle;
+  customIntervalDays: number | null;
+  category: SubscriptionCategory;
+  status: SubscriptionStatus;
+  startDate: string;
+  nextRenewalDate: string;
+};
+
+export type PaymentHistoryEntry = {
+  id: string;
+  amount: number;
+  currency: string;
+  paidAt: string;
+};
+
+export type SubscriptionDetail = Subscription & {
+  paymentHistory: PaymentHistoryEntry[];
+};
+
+export type PaginatedSubscriptions = {
+  items: Subscription[];
+  total: number;
+  page: number;
+  limit: number;
+};
+
+export type CreateSubscriptionInput = {
+  name: string;
+  cost: number;
+  currency: string;
+  billingCycle: BillingCycle;
+  customIntervalDays: number | null;
+  category: SubscriptionCategory;
+  startDate: string;
+};
+
+export type UpdateSubscriptionInput = Partial<CreateSubscriptionInput>;

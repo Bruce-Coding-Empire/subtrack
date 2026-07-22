@@ -107,6 +107,7 @@ module.exports = {
         surface: "#ffffff",
         "surface-secondary": "#f9fafb",
         border: "#e5ebe8",
+        "border-light": "#edf1ef",
         "text-primary": "#10241e",
         "text-secondary": "#5c6b65",
         "text-muted": "#94a39c",
@@ -116,12 +117,16 @@ module.exports = {
         "accent-foreground": "#ffffff",
         success: "#16a34a",
         "success-light": "#dcfce7",
+        "success-foreground": "#15803d",
         warning: "#f59e0b",
         "warning-light": "#fef3c7",
+        "warning-foreground": "#b45309",
         error: "#ef4444",
         "error-light": "#fee2e2",
+        "error-foreground": "#b91c1c",
         info: "#3b82f6",
         "info-light": "#dbeafe",
+        "info-foreground": "#1d4ed8",
         "category-entertainment": "#0f9d78",
         "category-software": "#3b82f6",
         "category-fitness": "#f59e0b",
@@ -142,7 +147,7 @@ module.exports = {
 
 Any token added to one file must be added to the other in the same session — they must never drift.
 
-`accent-foreground` (#ffffff, Primary button text) was missing from this Mobile Token Mirror even though `globals.css` already had it — added during feature 14 (Mobile Auth), the first mobile feature to need Primary buttons. Backfill any other `-foreground`/`-light` token gaps only when a feature actually needs them, not preemptively.
+`accent-foreground` (#ffffff, Primary button text) was missing from this Mobile Token Mirror even though `globals.css` already had it — added during feature 14 (Mobile Auth), the first mobile feature to need Primary buttons. `border-light` (#edf1ef, list-row dividers) and `success-foreground`/`warning-foreground`/`error-foreground`/`info-foreground` (status and renewal-urgency badge text, exact color distinct from the base token) were backfilled the same way during feature 15 (Mobile Subscriptions), the first mobile feature with status/urgency badges. Backfill any other `-foreground`/`-light` token gaps only when a feature actually needs them, not preemptively.
 
 **Mobile font weights:** `@expo-google-fonts/inter` (loaded via `expo-font`'s `useFonts()`) ships each weight as a separate static font file, not a variable font — so unlike web's single `--font-sans` + `font-medium`/`font-semibold` utility split, `apps/mobile/tailwind.config.js` defines one `fontFamily` key per weight actually used: `font-sans` (400), `font-sans-medium` (500), `font-sans-semibold` (600), `font-sans-bold` (700). Use these instead of Tailwind's `font-weight` utilities (`font-medium`, etc.) on mobile — those set CSS `font-weight`, which React Native mostly ignores for custom static-weight fonts.
 

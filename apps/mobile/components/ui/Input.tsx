@@ -4,7 +4,7 @@ import { Text, TextInput, View, type TextInputProps } from "react-native";
 import { Colors } from "@/constants/colors";
 
 type Props = TextInputProps & {
-  label: string;
+  label?: string;
   error?: string;
 };
 
@@ -18,7 +18,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
 
   return (
     <View className="gap-1">
-      <Text className="font-sans-medium text-sm text-text-primary">{label}</Text>
+      {label ? <Text className="font-sans-medium text-sm text-text-primary">{label}</Text> : null}
       <TextInput
         ref={ref}
         className={`rounded-md border bg-surface px-3 py-2 font-sans text-sm text-text-primary ${borderClass} ${className ?? ""}`}

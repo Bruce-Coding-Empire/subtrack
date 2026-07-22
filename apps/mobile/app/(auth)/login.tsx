@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
@@ -58,9 +59,11 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="flex-row items-center gap-2">
-            <View className="h-9 w-9 items-center justify-center rounded-[10px] bg-accent">
-              <Text className="font-sans-bold text-sm text-accent-foreground">S</Text>
-            </View>
+            <Image
+              source={require("@/assets/images/subtrack.png")}
+              style={{ width: 36, height: 36 }}
+              contentFit="contain"
+            />
             <Text className="font-sans-bold text-lg text-text-primary">SubTrack</Text>
           </View>
 

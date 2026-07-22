@@ -45,7 +45,7 @@ Apply the font variable class to the `<html>` tag.
 - No underline — active state is color change only
 - User name text: 14px, font-weight 500, `text-text-primary`. Avatar: 32px circle, `bg-accent-light` background, `text-accent` initial letter, centered.
 
-**Mobile tab bar** — four items: `Dashboard`, `Subscriptions`, `Add` (center, visually prominent — larger icon in an accent-colored circle), `Settings`.
+**Mobile tab bar** — four items: `Dashboard`, `Subscriptions`, `Add` (center, visually prominent — larger icon in an accent-colored circle), `Settings`. Note: with exactly 4 items "center" lands at the 3rd-of-4 slot (62.5% across), not true visual center (50%) — accepted as a known v1 limitation, see `build-plan.md`'s v2 Roadmap for the planned fix (a 5th tab from push notifications naturally re-centers it).
 - Active tab icon + label: `accent`
 - Inactive tab icon + label: `text-muted`
 - User's display name shown in the Dashboard screen header ("Hi, {name}") and at the top of the Settings screen next to the same avatar pattern as web — not in the tab bar itself, since space is tight
