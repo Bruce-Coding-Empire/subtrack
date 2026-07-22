@@ -9,6 +9,9 @@ import {
   subscribeToSessionInvalidation,
 } from "@/lib/auth";
 import type { ApiResponse, AuthResponse, User } from "@/lib/types";
+// User (not UserProfile) is intentional here — the session only needs the
+// fields shared with auth's login/register response (id/name/email/base
+// currency); monthlySpendLimit is Settings-page-only data.
 
 type SessionContextValue = {
   isAuthenticated: boolean;
@@ -17,6 +20,7 @@ type SessionContextValue = {
   signIn: (email: string, password: string) => Promise<ApiResponse<AuthResponse>>;
   signUp: (name: string, email: string, password: string) => Promise<ApiResponse<AuthResponse>>;
   signOut: () => Promise<void>;
+  updateUser: (user: User) => void;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -88,7 +92,9 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }
 
   return (
-    <SessionContext.Provider value={{ isAuthenticated, isLoading, user, signIn, signUp, signOut }}>
+    <SessionContext.Provider
+      value={{ isAuthenticated, isLoading, user, signIn, signUp, signOut, updateUser: setUser }}
+    >
       {children}
     </SessionContext.Provider>
   );
