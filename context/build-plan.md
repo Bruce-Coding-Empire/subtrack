@@ -224,3 +224,4 @@ For each app: UI built with mock data first, verified visually, then wired to th
 - Bank/email auto-detection of subscriptions
 - CSV/PDF export
 - Multi-currency base (per-portfolio rather than per-user)
+- Mobile tab bar true centering — with today's 4 items (Dashboard, Subscriptions, Add, Settings), the prominent "Add" button sits at the 3rd-of-4 slot (62.5% across), not visual center (50%), since 4 is an even count with no true middle column. Noted by the user as visually off during feature 15 testing. Once push notifications (above) lands, add a 5th tab (e.g. Alerts/Notifications) — Add becomes the true 3rd-of-5 center item at that point, so this resolves itself rather than needing a special-cased layout fix now.
