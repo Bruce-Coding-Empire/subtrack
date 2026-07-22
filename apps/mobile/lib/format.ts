@@ -17,3 +17,13 @@ export function formatBillingCycle(subscription: Pick<Subscription, "billingCycl
   }
   return BILLING_CYCLE_LABELS[subscription.billingCycle];
 }
+
+export function formatMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  return date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+}
+
+export function formatCompactAmount(value: number): string {
+  return new Intl.NumberFormat("en-US", { notation: "compact" }).format(value);
+}
