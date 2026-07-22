@@ -23,7 +23,8 @@
     "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
-    "trigger:renewal": "ts-node -r tsconfig-paths/register src/scripts/trigger-renewal.ts"
+    "trigger:renewal": "ts-node -r tsconfig-paths/register src/scripts/trigger-renewal.ts",
+    "trigger:exchange-rate": "ts-node -r tsconfig-paths/register src/scripts/trigger-exchange-rate.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
