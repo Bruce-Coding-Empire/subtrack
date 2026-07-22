@@ -105,7 +105,7 @@ cp apps/mobile/.env.example apps/mobile/.env.local
 ```bash
 npm run dev          # web + api together
 npm run dev:web       # web only        → http://localhost:3000
-npm run dev:api        # api only        → http://localhost:3001 (docs at /api/docs)
+npm run dev:api        # api only        → http://localhost:8000 (docs at /api/docs)
 npm run dev:mobile       # mobile only     → Expo dev server
 ```
 

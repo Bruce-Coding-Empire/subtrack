@@ -330,7 +330,7 @@ const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup("api/docs", app, document);
 ```
 
-Docs served at `http://localhost:3001/api/docs` in dev. Never expose Swagger UI in production without auth in front of it — for this portfolio project, disable it in production entirely via an env check:
+Docs served at `http://localhost:8000/api/docs` in dev. Never expose Swagger UI in production without auth in front of it — for this portfolio project, disable it in production entirely via an env check:
 
 ```typescript
 if (process.env.NODE_ENV !== "production") {
