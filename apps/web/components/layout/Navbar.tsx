@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -46,23 +47,29 @@ export function Navbar() {
   return (
     <header className="h-16 w-full border-b border-border bg-surface">
       <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-6">
-        <nav className="flex items-center gap-6">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "text-sm font-medium",
-                  isActive ? "text-accent" : "text-text-secondary",
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-8">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Image src="/subtrack.png" alt="SubTrack" width={28} height={28} />
+            <span className="text-base font-bold text-text-primary">SubTrack</span>
+          </Link>
+          <nav className="flex items-center gap-6">
+            {NAV_ITEMS.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "text-sm font-medium",
+                    isActive ? "text-accent" : "text-text-secondary",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
         {user && (
           <div className="flex items-center gap-3">
