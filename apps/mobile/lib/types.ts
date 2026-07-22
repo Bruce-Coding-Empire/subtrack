@@ -65,3 +65,36 @@ export type CreateSubscriptionInput = {
 };
 
 export type UpdateSubscriptionInput = Partial<CreateSubscriptionInput>;
+
+export type CategoryBreakdownEntry = {
+  category: SubscriptionCategory;
+  amount: number;
+  percentage: number;
+};
+
+export type UpcomingRenewal = {
+  id: string;
+  name: string;
+  amount: number;
+  currency: string;
+  nextRenewalDate: string;
+};
+
+export type DashboardSummary = {
+  totalMonthlySpend: number;
+  totalYearlySpend: number;
+  baseCurrency: string;
+  activeSubscriptionsCount: number;
+  categoryBreakdown: CategoryBreakdownEntry[];
+  upcomingRenewals: UpcomingRenewal[];
+};
+
+export type SpendTrendPoint = {
+  month: string;
+  amount: number;
+};
+
+export type SpendTrend = {
+  baseCurrency: string;
+  points: SpendTrendPoint[];
+};
