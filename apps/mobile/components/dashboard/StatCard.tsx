@@ -10,7 +10,14 @@ type Props = {
 export function StatCard({ label, value }: Props) {
   return (
     <Card className="flex-1 gap-1">
-      <Text className="font-sans-semibold text-[26px] leading-8 text-text-primary">{value}</Text>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.6}
+        className="font-sans-semibold text-[26px] leading-8 text-text-primary"
+      >
+        {value}
+      </Text>
       <Text className="font-sans text-xs text-text-muted">{label}</Text>
     </Card>
   );

@@ -17,6 +17,15 @@ export type AuthResponse = {
   user: User;
 };
 
+export type UserProfile = User & {
+  monthlySpendLimit: number | null;
+};
+
+export type UpdateUserInput = {
+  name?: string;
+  baseCurrency?: string;
+};
+
 export type BillingCycle = "weekly" | "monthly" | "yearly" | "custom";
 
 export type SubscriptionCategory = "entertainment" | "software" | "fitness" | "utilities" | "other";
