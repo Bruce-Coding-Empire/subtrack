@@ -10,7 +10,8 @@
     "dev:mobile": "npm run start --workspace=apps/mobile",
     "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
     "build:web": "npm run build --workspace=apps/web",
-    "build:api": "npm run build --workspace=apps/api"
+    "build:api": "npm run build --workspace=apps/api",
+    "postinstall": "node scripts/link-expo-router.js"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
