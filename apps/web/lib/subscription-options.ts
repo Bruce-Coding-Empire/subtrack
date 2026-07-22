@@ -18,6 +18,14 @@ export const CATEGORY_BADGE_CLASSES: Record<SubscriptionCategory, string> = {
   other: "bg-category-other/12 text-category-other",
 };
 
+export const CATEGORY_CHART_COLORS: Record<SubscriptionCategory, string> = {
+  entertainment: "var(--color-category-entertainment)",
+  software: "var(--color-category-software)",
+  fitness: "var(--color-category-fitness)",
+  utilities: "var(--color-category-utilities)",
+  other: "var(--color-category-other)",
+};
+
 export const BILLING_CYCLE_OPTIONS: { value: BillingCycle; label: string }[] = [
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },

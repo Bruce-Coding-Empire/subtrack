@@ -2,7 +2,7 @@
 
 This is the single source of truth for every endpoint the Nest.js API exposes. Web and mobile are built independently against this file — if a shape changes, update this file first, then update the API, then update both clients.
 
-Base URL (dev): `http://localhost:3001`
+Base URL (dev): `http://localhost:8000`
 All authenticated routes require `Authorization: Bearer {accessToken}` unless noted.
 All responses follow the shape defined in `code-standards.md` — `{ success: boolean, data?: T, error?: string }`.
 
@@ -136,6 +136,7 @@ Response:
     "totalMonthlySpend": 142.50,
     "totalYearlySpend": 1710.00,
     "baseCurrency": "RWF",
+    "activeSubscriptionsCount": 5,
     "categoryBreakdown": [
       { "category": "entertainment", "amount": 45.00, "percentage": 31.5 }
     ],
@@ -145,7 +146,7 @@ Response:
   }
 }
 ```
-Amounts in `totalMonthlySpend`, `totalYearlySpend`, and `categoryBreakdown` are converted to `baseCurrency`. `upcomingRenewals` amounts stay in original currency.
+Amounts in `totalMonthlySpend`, `totalYearlySpend`, and `categoryBreakdown` are converted to `baseCurrency`. `upcomingRenewals` amounts stay in original currency. `activeSubscriptionsCount` is the count of `status = 'active'` subscriptions (drives the "Active Subscriptions" stat card in `ui-rules.md`) — `upcomingRenewals.length` covers the "Upcoming Renewals" stat card, so no separate count field is needed for that one.
 
 ### `GET /dashboard/spend-trend`
 

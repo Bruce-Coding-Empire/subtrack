@@ -11,6 +11,12 @@ export function formatDate(dateString: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
+export function formatMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, 1));
+  return date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+}
+
 export function formatBillingCycle(subscription: Pick<Subscription, "billingCycle" | "customIntervalDays">): string {
   if (subscription.billingCycle === "custom") {
     return `Every ${subscription.customIntervalDays} days`;
