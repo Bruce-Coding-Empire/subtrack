@@ -164,4 +164,30 @@ New in feature 13, to give `Navbar` a single place to render across `/dashboard`
 
 ## Mobile Components
 
-_Empty. Components will be added here as they are built._
+### `Input` — `apps/mobile/components/ui/Input.tsx`
+
+`forwardRef<TextInput>`, label + `TextInput` + optional error, matching `ui-rules.md`'s Form Input spec (`bg-surface border border-border rounded-md px-3 py-2`, focus → `border-accent`, error → `border-error`). Focus state is local `useState` toggled via `onFocus`/`onBlur` rather than a NativeWind `focus:` variant — not verified to work reliably on `TextInput` in this environment (no simulator available to confirm), so handled the safe, definitely-supported way instead. `placeholderTextColor` is a native `TextInput` prop (can't take a Tailwind class), sourced from the new `constants/colors.ts` rather than a hardcoded hex — see that file's note.
+
+### `PasswordInput` — `apps/mobile/components/ui/PasswordInput.tsx`
+
+Wraps `Input` with a `secureTextEntry` toggle. Show/hide control is a plain text `Pressable` ("Show"/"Hide"), not an icon button — no icon library is an approved mobile dependency (`@expo/vector-icons` ships with Expo but wasn't added to avoid an unreviewed new UI dependency for one button; revisit if a later feature needs icons broadly). Absolutely positioned inside the wrapper at `right-3 top-9` — that offset assumes the `Input` label + `gap-1` layout and hasn't been visually confirmed on-device (see the feature 14 progress-tracker note on unverified rendering).
+
+### `Button` — `apps/mobile/components/ui/Button.tsx`
+
+`Pressable` + `Text`, Primary style only (`bg-accent`, `text-accent-foreground`, `rounded-md`, `px-4 py-2`) — no Secondary/Destructive variants yet, since nothing built so far needs them (the Sign Out button on the placeholder Settings screen passes `className="bg-error"` as a one-off override rather than a real variant prop). Add real variants when a feature needs one instead of guessing the API shape now. `loading` prop shows an `ActivityIndicator` (color from `constants/colors.ts`) before the label and disables the press target, same disabled-state handling as the plain `disabled` prop.
+
+### `constants/colors.ts` — `apps/mobile/constants/colors.ts`
+
+Plain-object mirror of `tailwind.config.js`'s color tokens, camelCased, for native props that can't take a NativeWind `className` (`placeholderTextColor`, `ActivityIndicator`'s `color`, and — per `library-docs.md` — `react-native-chart-kit`'s `chartConfig`/`legendFontColor` later). Replaces the deleted stock-template `constants/theme.ts` (light/dark `Colors` object) — this app has one theme only, per `ui-tokens.md`. Must stay in sync with `tailwind.config.js` and `ui-tokens.md`'s Mobile Token Mirror.
+
+### `(auth)/login.tsx`, `(auth)/register.tsx` — `apps/mobile/app/(auth)/*.tsx`
+
+Self-contained screens (no `components/auth/` folder — `architecture.md`'s mobile component tree only lists `dashboard/`, `subscriptions/`, `ui/`, so form logic lives directly in the screen per `code-standards.md`'s "screens call `lib/api-client.ts` and render"). Plain `useState` + `zod`'s `safeParse` on submit (no `react-hook-form` — it's not an approved mobile dependency, unlike web), mapping `ZodError.issues[].path[0]` to a `FieldErrors` record for inline messages. Branded header (36×36 `bg-accent` box + "S" + "SubTrack" wordmark) is a flat `bg-accent` fill, not web's gradient — `expo-linear-gradient` isn't an approved dependency and plain NativeWind doesn't render CSS gradients on native views. Calls `useSession().signIn`/`signUp` (`lib/auth-context.tsx`) — no manual `router.replace` on success; `Stack.Protected` in the root layout reacts to `isAuthenticated` and swaps the whole stack.
+
+### `(tabs)/_layout.tsx`, `dashboard.tsx`, `subscriptions.tsx`, `settings.tsx` — `apps/mobile/app/(tabs)/*.tsx`
+
+Minimal 3-tab shell (`expo-router`'s `Tabs`, no icons) built only so the auth guard has a real, testable authenticated destination — feature 14's scope is auth, not these screens' real content. Each body is a centered "Coming soon" placeholder. The full spec (4 tabs incl. the prominent center "Add" button, per `ui-rules.md`'s Navigation section) is deferred to feature 15, since "Add" has nowhere to navigate to until then. `settings.tsx` additionally renders a Sign Out button (`useSession().signOut()`) — not speced anywhere yet (same gap web hit until its feature 13 Navbar), included now because the auth guard needs a real way to flip back to unauthenticated for testing; will move/merge into the real Settings screen in feature 17.
+
+### `app/_layout.tsx`, `lib/auth-context.tsx` — `apps/mobile/app/_layout.tsx`, `apps/mobile/lib/auth-context.tsx`
+
+Root layout loads Inter (4 weights via `@expo-google-fonts/inter`'s `useFonts`) and holds `SplashScreen.preventAutoHideAsync()` until **both** fonts are loaded and `SessionProvider`'s cold-start session bootstrap resolves — the latter is a deliberate extension beyond the stock font-only splash pattern, needed to avoid a login-screen flash for an already-logged-in user. Uses `expo-router`'s current (SDK 57) `Stack.Protected` pattern — `guard={isAuthenticated}` / `guard={!isAuthenticated}` wrapping `(tabs)` / `(auth)` respectively — confirmed via the context7 MCP server against `docs.expo.dev`'s `router/advanced/authentication` guide as the current recommended approach, rather than the older manual `<Redirect>`-in-layout pattern. `SessionProvider` bootstraps by reading a persisted refresh token from `expo-secure-store` and attempting one silent refresh; on a fresh install (no stored token) or a failed refresh, `isAuthenticated` stays `false`. `lib/auth.ts` (pure token functions) and `lib/auth-context.tsx` (the React Context) are split — `architecture.md`'s tree only lists one `lib/auth.ts`, but mobile additionally needs a reactive hook for `Stack.Protected`'s `guard`, which web's cookie-based redirect model never required.

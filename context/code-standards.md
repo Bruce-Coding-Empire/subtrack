@@ -317,8 +317,10 @@ Approved dependencies:
 
 **apps/web:** `tailwindcss`, `shadcn/ui` components, `recharts`, `lucide-react`, `zod` (form validation), `react-hook-form` + `@hookform/resolvers` (unavoidable peer dependencies of shadcn/ui's `Form` component — same treatment as `passport` under `@nestjs/passport` in `apps/api`)
 
-**apps/mobile:** `expo-router`, `nativewind`, `react-native-chart-kit`, `expo-secure-store`, `zod`
+**apps/mobile:** `expo-router`, `nativewind`, `react-native-chart-kit`, `expo-secure-store`, `zod`, `@expo-google-fonts/inter` (Inter ships as static per-weight font files, not a variable font — this is `expo-font` + "Inter package" per `ui-tokens.md`'s Typography section, added feature 14 when mobile first needed to load a font)
 
 **apps/web (devDependency only, never shipped):** `playwright` — headless-browser verification of UI features during the build, since no `chromium-cli`-equivalent tool is available in this environment. Not a runtime dependency.
+
+**apps/mobile (devDependency only, never shipped):** `eslint-config-expo` — auto-installed by `npx expo lint` the first time it ran (feature 14, first mobile feature with a lint pass); not previously configured.
 
 Do not install anything outside this list without updating it first.

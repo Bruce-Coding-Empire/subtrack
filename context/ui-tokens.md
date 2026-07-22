@@ -113,6 +113,7 @@ module.exports = {
         accent: "#0f9d78",
         "accent-dark": "#0b7a5c",
         "accent-light": "#e3f6ee",
+        "accent-foreground": "#ffffff",
         success: "#16a34a",
         "success-light": "#dcfce7",
         warning: "#f59e0b",
@@ -140,6 +141,10 @@ module.exports = {
 ```
 
 Any token added to one file must be added to the other in the same session — they must never drift.
+
+`accent-foreground` (#ffffff, Primary button text) was missing from this Mobile Token Mirror even though `globals.css` already had it — added during feature 14 (Mobile Auth), the first mobile feature to need Primary buttons. Backfill any other `-foreground`/`-light` token gaps only when a feature actually needs them, not preemptively.
+
+**Mobile font weights:** `@expo-google-fonts/inter` (loaded via `expo-font`'s `useFonts()`) ships each weight as a separate static font file, not a variable font — so unlike web's single `--font-sans` + `font-medium`/`font-semibold` utility split, `apps/mobile/tailwind.config.js` defines one `fontFamily` key per weight actually used: `font-sans` (400), `font-sans-medium` (500), `font-sans-semibold` (600), `font-sans-bold` (700). Use these instead of Tailwind's `font-weight` utilities (`font-medium`, etc.) on mobile — those set CSS `font-weight`, which React Native mostly ignores for custom static-weight fonts.
 
 ---
 
