@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { CategoryBreakdownChart } from "@/components/dashboard/CategoryBreakdownChart";
+import { SpendLimitProgress } from "@/components/dashboard/SpendLimitProgress";
 import { SpendTrendChart } from "@/components/dashboard/SpendTrendChart";
 import { UpcomingRenewalsList } from "@/components/dashboard/UpcomingRenewalsList";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { getDashboardSummary, getSpendTrend } from "@/lib/dashboard";
+import { mockSpendLimitSummary } from "@/lib/mock-spend-limit";
 import type { DashboardSummary, SpendTrend } from "@/types";
 
 export function DashboardPageClient() {
@@ -79,6 +81,14 @@ export function DashboardPageClient() {
       ) : (
         <>
           <DashboardStats summary={summary} />
+
+          <SpendLimitProgress
+            spendLimit={mockSpendLimitSummary.spendLimit}
+            currentMonthSpend={mockSpendLimitSummary.currentMonthSpend}
+            percentageUsed={mockSpendLimitSummary.percentageUsed}
+            isOverLimit={mockSpendLimitSummary.isOverLimit}
+            baseCurrency={summary.baseCurrency}
+          />
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
