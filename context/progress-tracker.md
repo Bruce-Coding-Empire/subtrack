@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 9 — Spend Limits — Mobile (v2)
-**Last completed:** 21 Landing Page — Web UI + Wiring
-**Next:** 22 Spend Limits — Mobile (UI + Wiring)
+**Phase:** Phase 10 — Push Notifications (v2)
+**Last completed:** 23 Notification Preferences API
+**Next:** 24 Push Token Registration — Mobile
 
 ---
 
@@ -61,7 +61,14 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 9 — Spend Limits — Mobile (v2)
 
-- [ ] 22 Spend Limits — Mobile (UI + Wiring)
+- [x] 22 Spend Limits — Mobile (UI + Wiring)
+
+### Phase 10 — Push Notifications (v2)
+
+- [x] 23 Notification Preferences API
+- [ ] 24 Push Token Registration — Mobile
+- [ ] 25 Notification Preferences + Alerts Tab — Web + Mobile (UI + Wiring)
+- [ ] 26 Renewal + Spend-Limit Push Dispatch Job — API
 
 ---
 
@@ -216,6 +223,13 @@ Update this file after every completed feature. Any AI agent reading this should
 - **21 Landing Page — Web UI + Wiring.** Resolved the build-plan's open question — `/` now redirects authenticated visitors to `/dashboard`, added to `proxy.ts`'s existing `AUTH_ROUTES` array (same list `/login`/`/register` already use) rather than a new branch, since the desired behavior is identical: redirect away if the `subtrack_session` marker cookie is present, otherwise render. Verified directly against the `Proxy` layer with `curl -H "Cookie: subtrack_session=1"` (`307` → `/dashboard`), not by trusting a full-browser Playwright navigation — a marker-cookie-only Playwright session predictably bounces further, from `/dashboard` to `/login`, once `DashboardPageClient` attempts a real (unauthenticated) API fetch and the existing feature-04 lazy-refresh-failure redirect kicks in; that downstream bounce is expected/unrelated client-side behavior, not a proxy bug.
 - **21 Landing Page — Web UI + Wiring.** Added `NEXT_PUBLIC_SITE_URL` (new row in `code-standards.md`'s env table, `apps/web/.env.example` and `.env.local`) and set `metadataBase` in `app/layout.tsx` from it (falling back to `http://localhost:3000`) — `next build` was otherwise emitting a `metadataBase property in metadata export is not set` warning once `page.tsx`'s new `openGraph`/`twitter` metadata (using the existing `/subtrack.png` logo, no dedicated marketing OG image asset exists yet) needed to resolve relative image URLs to absolute ones.
 - **21 Landing Page — Web UI + Wiring — verification.** `next build`/`eslint`/`tsc --noEmit` all clean. Visually verified via Playwright against the already-running dev server on port 3000 (not a newly started one — starting a second `next dev` collided with it, same reused-existing-server pattern as features 16/17/20): screenshotted the full page at desktop (1280px) and mobile (390px) viewports, confirmed all locked-spec copy/CTAs/feature-card titles render, and confirmed the header's/hero's/closing band's `Get Started` links all point at `/register`. Screenshots and the verification script were deleted after confirming, per this project's Playwright-cleanup convention.
+
+- **Tracker maintenance, not a feature.** `progress-tracker.md` had drifted stale — feature 22 (`Spend Limits — Mobile`) was fully implemented and merged (PR #24) but was still showing as "Next" here. Corrected before starting feature 23; no code change involved.
+- **23 Notification Preferences API.** New `NotificationsModule`, first module to move an entity that predates it — `NotificationPreference` relocated from `modules/users/entities/` to `modules/notifications/entities/` per the build-plan's standing note, with `database/entities.ts`'s import updated to match. `architecture.md`'s monorepo tree gained the `notifications/` module folder, only now that it actually exists, per that same note.
+- **23 Notification Preferences API.** No migration needed — `notification_preferences` has existed since the initial schema (v1, scaffolded/unused). No row is created at registration, so all three endpoints (`GET`/`PATCH /notifications/preferences`, `POST /notifications/push-token`) go through a private `getOrCreate(userId)` in `NotificationsService` that lazily inserts a default row (`renewalRemindersEnabled`/`spendLimitAlertsEnabled` both `false`, `pushToken` null) on first access — mirrors how `UsersService` never needed this (the `users` row always exists from registration) but nothing has ever created a `notification_preferences` row until now.
+- **23 Notification Preferences API.** `POST /notifications/push-token` response omits the token from its `{ success: true }` body (no `data`) — the client already knows the value it just sent, and there's no use case for reading it back. `GET`/`PATCH /notifications/preferences` responses also never include the raw `pushToken` — it's a device implementation detail, not something either UI surfaces (`ui-rules.md` has no push-token field anywhere), same "map to a response DTO, don't leak internal fields" rule already applied to `UserProfileResponse` (never returns `passwordHash`).
+- **23 Notification Preferences API.** `registerPushToken()` no-ops (skips the write) if the incoming token matches what's already stored — pure defensive idempotency on the API side; feature 24's mobile client is separately expected to skip re-registering unchanged tokens, per `build-plan.md`, but the service shouldn't assume the client always gets that right.
+- **23 Notification Preferences API — verification.** Verified end-to-end against a live `nest start --watch` instance and the real local Postgres DB, not just `tsc`/`eslint`: API listens on port **8000** by default (`PORT` unset in `.env` — corrected an assumption mid-session that it was 3001, the CORS-config env var `WEB_APP_URL`'s port, not the API's own). Logged in as the seeded test user: `GET /notifications/preferences` lazily created a default row (confirmed via a direct `SELECT` against `notification_preferences` — `renewal_reminders_enabled`/`spend_limit_alerts_enabled` both `false`, `push_token` null), `PATCH` persisted `renewalRemindersEnabled: true` and read back correctly, `POST /notifications/push-token` stored the token (confirmed via the same direct `SELECT`), an empty-string token was rejected with `400`, and an unauthenticated request to `GET /notifications/preferences` returned `401`. `GET /api/docs` (Swagger) also returned `200` with the new `notifications` tag present.
 
 ---
 

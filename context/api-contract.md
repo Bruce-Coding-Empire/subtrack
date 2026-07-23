@@ -195,6 +195,34 @@ Response: updated user object.
 
 ---
 
+## Notifications
+
+### `GET /notifications/preferences`
+
+Response:
+```json
+{ "success": true, "data": { "renewalRemindersEnabled": false, "spendLimitAlertsEnabled": false } }
+```
+Lazily creates a default preferences row (both flags `false`) on first access — no row is created at registration.
+
+### `PATCH /notifications/preferences`
+
+Request:
+```json
+{ "renewalRemindersEnabled": "boolean (optional)", "spendLimitAlertsEnabled": "boolean (optional)" }
+```
+Response: updated preferences object, same shape as `GET`.
+
+### `POST /notifications/push-token`
+
+Request:
+```json
+{ "pushToken": "string" }
+```
+Stores the Expo push token for the current user, overwriting any previously stored token. Response: `{ "success": true }`.
+
+---
+
 ## Error Responses
 
 All errors follow:

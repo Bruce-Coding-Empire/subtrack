@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { User } from './user.entity';
+import { User } from '@/modules/users/entities/user.entity';
 
 @Entity('notification_preferences')
 export class NotificationPreference {

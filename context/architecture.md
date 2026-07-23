@@ -103,10 +103,15 @@
 │   │       │   │   ├── currency.module.ts
 │   │       │   │   ├── currency.service.ts
 │   │       │   │   └── entities/exchange-rate.entity.ts
-│   │       │   └── scheduler/
-│   │       │       ├── scheduler.module.ts
-│   │       │       ├── renewal.job.ts
-│   │       │       └── exchange-rate.job.ts
+│   │       │   ├── scheduler/
+│   │       │   │   ├── scheduler.module.ts
+│   │       │   │   ├── renewal.job.ts
+│   │       │   │   └── exchange-rate.job.ts
+│   │       │   └── notifications/
+│   │       │       ├── notifications.module.ts
+│   │       │       ├── notifications.controller.ts
+│   │       │       ├── notifications.service.ts
+│   │       │       └── entities/notification-preference.entity.ts
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
 │   │           │   └── jwt-auth.guard.ts
