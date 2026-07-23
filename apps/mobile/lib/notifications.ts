@@ -4,8 +4,28 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 import { apiFetch } from "@/lib/api-client";
+import type {
+  ApiResponse,
+  NotificationPreferences,
+  UpdateNotificationPreferencesInput,
+} from "@/lib/types";
 
 const LAST_REGISTERED_TOKEN_KEY = "lastRegisteredPushToken";
+
+export async function getNotificationPreferences(): Promise<
+  ApiResponse<NotificationPreferences>
+> {
+  return apiFetch<NotificationPreferences>("/notifications/preferences");
+}
+
+export async function updateNotificationPreferences(
+  input: UpdateNotificationPreferencesInput,
+): Promise<ApiResponse<NotificationPreferences>> {
+  return apiFetch<NotificationPreferences>("/notifications/preferences", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
 
 async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== "android") return;

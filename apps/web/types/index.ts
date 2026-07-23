@@ -112,3 +112,10 @@ export type CreateSubscriptionInput = {
 };
 
 export type UpdateSubscriptionInput = Partial<CreateSubscriptionInput>;
+
+export type NotificationPreferences = {
+  renewalRemindersEnabled: boolean;
+  spendLimitAlertsEnabled: boolean;
+};
+
+export type UpdateNotificationPreferencesInput = Partial<NotificationPreferences>;

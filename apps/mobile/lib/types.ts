@@ -112,3 +112,10 @@ export type SpendTrend = {
   baseCurrency: string;
   points: SpendTrendPoint[];
 };
+
+export type NotificationPreferences = {
+  renewalRemindersEnabled: boolean;
+  spendLimitAlertsEnabled: boolean;
+};
+
+export type UpdateNotificationPreferencesInput = Partial<NotificationPreferences>;

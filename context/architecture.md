@@ -132,6 +132,7 @@
 │       │   ├── (tabs)/
 │       │   │   ├── dashboard.tsx
 │       │   │   ├── subscriptions.tsx
+│       │   │   ├── alerts.tsx
 │       │   │   └── settings.tsx
 │       │   └── subscription/
 │       │       ├── [id].tsx
