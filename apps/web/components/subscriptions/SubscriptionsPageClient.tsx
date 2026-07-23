@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AddSubscriptionDialog } from "@/components/subscriptions/AddSubscriptionDialog";
+import { DetectedSubscriptionsBanner } from "@/components/subscriptions/DetectedSubscriptionsBanner";
 import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilters";
 import { SubscriptionsPagination } from "@/components/subscriptions/SubscriptionsPagination";
 import { SubscriptionsTable } from "@/components/subscriptions/SubscriptionsTable";
 import { listSubscriptions } from "@/lib/subscriptions";
+import { mockDetectedSubscriptions } from "@/lib/mock-detected-subscriptions";
 import type { Subscription, SubscriptionStatus } from "@/types";
+
+const PENDING_DETECTED_COUNT = mockDetectedSubscriptions.filter(
+  (detected) => detected.status === "pending",
+).length;
 
 type StatusFilter = SubscriptionStatus | "all";
 
@@ -83,6 +89,8 @@ export function SubscriptionsPageClient() {
         <h1 className="text-base font-semibold text-text-primary">Subscriptions</h1>
         <AddSubscriptionDialog onCreated={handleCreated} />
       </div>
+
+      <DetectedSubscriptionsBanner count={PENDING_DETECTED_COUNT} />
 
       <Card>
         <CardContent className="flex flex-col gap-4">

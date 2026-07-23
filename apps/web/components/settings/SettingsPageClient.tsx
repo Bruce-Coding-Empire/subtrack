@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { GmailConnectionSection } from "@/components/settings/GmailConnectionSection";
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
 import { ProfileSection } from "@/components/settings/ProfileSection";
 import { SpendLimitSection } from "@/components/settings/SpendLimitSection";
@@ -49,6 +50,7 @@ export function SettingsPageClient() {
           <ProfileSection profile={profile} onSaved={setProfile} />
           <SpendLimitSection profile={profile} onSaved={setProfile} />
           <NotificationsSection />
+          <GmailConnectionSection />
         </div>
       )}
     </div>
