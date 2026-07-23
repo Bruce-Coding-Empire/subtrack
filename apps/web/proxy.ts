@@ -3,7 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/constants";
 
 const PROTECTED_ROUTES = ["/dashboard", "/subscriptions", "/settings"];
-const AUTH_ROUTES = ["/login", "/register"];
+// "/" (the landing page) redirects to /dashboard for authenticated visitors,
+// same as /login and /register — an authenticated visitor has no reason to
+// see marketing copy again.
+const AUTH_ROUTES = ["/login", "/register", "/"];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -25,5 +28,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/subscriptions/:path*", "/settings/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/subscriptions/:path*", "/settings/:path*", "/login", "/register", "/"],
 };
