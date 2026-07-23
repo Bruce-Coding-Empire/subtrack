@@ -6,10 +6,15 @@ import { GmailConnectionSection } from "@/components/settings/GmailConnectionSec
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
 import { ProfileSection } from "@/components/settings/ProfileSection";
 import { SpendLimitSection } from "@/components/settings/SpendLimitSection";
+import { cn } from "@/lib/utils";
 import { getCurrentUserProfile } from "@/lib/users";
 import type { UserProfile } from "@/types";
 
-export function SettingsPageClient() {
+type Props = {
+  gmailStatus: "connected" | "error" | null;
+};
+
+export function SettingsPageClient({ gmailStatus }: Props) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +45,22 @@ export function SettingsPageClient() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
       <h1 className="text-base font-semibold text-text-primary">Settings</h1>
+
+      {gmailStatus && (
+        <div
+          role="status"
+          className={cn(
+            "rounded-md border px-4 py-3 text-sm",
+            gmailStatus === "connected"
+              ? "border-accent bg-accent-light text-accent"
+              : "border-error bg-error-light text-error",
+          )}
+        >
+          {gmailStatus === "connected"
+            ? "Gmail connected — SubTrack will now scan your inbox for subscription receipts."
+            : "Couldn't connect Gmail — please try again."}
+        </div>
+      )}
 
       {isLoading ? (
         <p className="py-16 text-center text-sm text-text-muted">Loading settings…</p>

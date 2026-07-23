@@ -1,16 +1,39 @@
+"use client";
+
+import { useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ApproveDetectedSubscriptionDialog } from "@/components/subscriptions/ApproveDetectedSubscriptionDialog";
+import { dismissDetectedSubscription } from "@/lib/detected-subscriptions";
 import { BILLING_CYCLE_LABELS } from "@/lib/subscription-options";
 import { formatCurrency, formatDate } from "@/lib/format";
-import type { DetectedSubscription } from "@/types";
+import type { DetectedSubscription, Subscription } from "@/types";
 
 type Props = {
   detected: DetectedSubscription;
-  onApprove: (id: string) => void;
-  onDismiss: (id: string) => void;
+  onApproved: (id: string, subscription: Subscription) => void;
+  onDismissed: (id: string) => void;
 };
 
-export function DetectedSubscriptionRow({ detected, onApprove, onDismiss }: Props) {
+export function DetectedSubscriptionRow({ detected, onApproved, onDismissed }: Props) {
+  const [isDismissing, setIsDismissing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDismiss() {
+    setIsDismissing(true);
+    setError(null);
+    const result = await dismissDetectedSubscription(detected.id);
+    setIsDismissing(false);
+
+    if (!result.success) {
+      setError(result.error ?? "Failed to dismiss — please try again");
+      return;
+    }
+
+    onDismissed(detected.id);
+  }
+
   return (
     <li className="flex items-center justify-between gap-4 py-4">
       <div className="flex min-w-0 flex-col gap-1">
@@ -27,6 +50,11 @@ export function DetectedSubscriptionRow({ detected, onApprove, onDismiss }: Prop
           )}
         </div>
         <p className="truncate text-xs text-text-muted">{detected.rawSubject}</p>
+        {error && (
+          <p role="alert" className="text-xs text-error">
+            {error}
+          </p>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-4">
@@ -44,19 +72,13 @@ export function DetectedSubscriptionRow({ detected, onApprove, onDismiss }: Prop
           <Button
             type="button"
             size="sm"
-            onClick={() => onDismiss(detected.id)}
+            onClick={handleDismiss}
+            disabled={isDismissing}
             className="border-accent bg-surface text-accent hover:bg-accent-light"
           >
-            Dismiss
+            {isDismissing ? "Dismissing…" : "Dismiss"}
           </Button>
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => onApprove(detected.id)}
-            className="bg-accent text-accent-foreground hover:bg-accent-dark"
-          >
-            Approve
-          </Button>
+          <ApproveDetectedSubscriptionDialog detected={detected} onApproved={onApproved} />
         </div>
       </div>
     </li>

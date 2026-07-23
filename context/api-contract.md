@@ -225,6 +225,14 @@ Stores the Expo push token for the current user, overwriting any previously stor
 
 ## Integrations
 
+### `GET /integrations/gmail/status`
+
+Authenticated. Response:
+```json
+{ "success": true, "data": { "connected": true } }
+```
+`connected` is whether the current user has a stored Gmail connection (`email_connections` row for provider `gmail`). No connected-email address is returned — `email_connections` doesn't store one.
+
 ### `GET /integrations/gmail/connect`
 
 Authenticated. Response:
@@ -242,11 +250,61 @@ Not authenticated (no `Authorization` header is available — this is a browser 
 | Connected successfully                    | `/settings?gmail=connected`         |
 | User declined consent, missing/invalid params, invalid or expired `state`, or token exchange failed | `/settings?gmail=error` |
 
-Both clients treat this purely as a browser-navigation endpoint — `lib/api-client.ts` never calls it directly. The web Settings page reads the `gmail` query param on load to show a connected/error toast. Mobile is out of scope (see feature 30's note — OAuth consent is a web-browser-native flow).
+Both clients treat this purely as a browser-navigation endpoint — `lib/api-client.ts` never calls it directly. The web Settings page reads the `gmail` query param on load to show a connected/error banner. Mobile is out of scope (see feature 30's note — OAuth consent is a web-browser-native flow).
+
+Google's real redirect includes extra query params beyond `code`/`state`/`error` (`iss`, `scope`, `authuser`, `prompt`, sometimes `hd`) — this route reads `code`/`state`/`error` off the raw query object and ignores everything else rather than validating against a fixed DTO shape, since we don't control Google's query string contract.
 
 ### `DELETE /integrations/gmail/disconnect`
 
 Authenticated. Deletes the current user's stored Gmail connection, if any (idempotent — succeeds even if no connection exists).
+Response: `{ "success": true }`
+
+### `GET /integrations/detected`
+
+Authenticated. Returns pending detected subscriptions only — `approved`/`dismissed` items are never returned, nothing in the UI needs them once reviewed.
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": "uuid",
+        "vendorName": "Netflix",
+        "amount": 15.99,
+        "currency": "USD",
+        "billingCycle": "monthly",
+        "rawSubject": "Your Netflix receipt for July",
+        "receivedAt": "2026-07-18T09:12:00Z",
+        "status": "pending",
+        "detectedAt": "2026-07-19T01:00:00Z"
+      }
+    ]
+  }
+}
+```
+`vendorName`, `amount`, `currency`, `billingCycle` are nullable — best-effort parsing per feature 28. Ordered newest-detected first.
+
+### `POST /integrations/detected/:id/approve`
+
+Authenticated. Request body is the same shape as `POST /subscriptions`'s create body — the detected item's parsed fields are pre-filled client-side as defaults but always resubmitted explicitly, since `category` and `startDate` have no detected-data equivalent and must be supplied by the user reviewing the item:
+```json
+{
+  "name": "string",
+  "cost": "number",
+  "currency": "string (ISO 4217)",
+  "billingCycle": "weekly | monthly | yearly | custom",
+  "customIntervalDays": "number | null — required if billingCycle is custom",
+  "category": "entertainment | software | fitness | utilities | other",
+  "startDate": "YYYY-MM-DD"
+}
+```
+Creates a real subscription through the existing `subscriptions.service` create path (same validation, same response shape), then marks the detected row `status: 'approved'`. Returns 404 if the detected item doesn't exist, isn't owned by the current user, or is no longer `pending` (already reviewed).
+Response: created subscription object, same shape as `POST /subscriptions`.
+
+### `POST /integrations/detected/:id/dismiss`
+
+Authenticated. No body. Sets `status` to `dismissed`. Returns 404 under the same conditions as approve.
 Response: `{ "success": true }`
 
 ---
