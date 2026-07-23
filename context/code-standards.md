@@ -273,6 +273,7 @@ async function apiFetch<T>(
 | `REFRESH_TOKEN_MAX_AGE_MS` | apps/api             | Refresh cookie lifetime in ms — must match the refresh JWT's `expiresIn` ("7d") in `auth.service.ts` |
 | `EXCHANGE_RATE_API_URL`   | apps/api             | exchangerate.host base URL        |
 | `NEXT_PUBLIC_API_URL`     | apps/web             | Exposed to browser — API base URL |
+| `NEXT_PUBLIC_SITE_URL`    | apps/web             | Exposed to browser — canonical site URL, resolves `metadataBase` for OG/Twitter images |
 | `EXPO_PUBLIC_API_URL`     | apps/mobile           | Exposed to app bundle — API base URL |
 
 Never hardcode a URL, secret, or key anywhere in the codebase. `NEXT_PUBLIC_` / `EXPO_PUBLIC_` prefixes mean the value ships to the client — never put a secret behind those prefixes.
