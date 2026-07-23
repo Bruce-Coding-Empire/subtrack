@@ -81,7 +81,7 @@ export default function SettingsScreen() {
         ) : (
           <>
             <ProfileSection profile={profile} onSaved={handleProfileSaved} />
-            <SpendLimitSection />
+            <SpendLimitSection profile={profile} onSaved={handleProfileSaved} />
             <NotificationsSection />
           </>
         )}

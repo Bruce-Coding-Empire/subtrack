@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "@/components/ui/Card";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { CategoryBreakdownChart } from "@/components/dashboard/CategoryBreakdownChart";
+import { SpendLimitProgress } from "@/components/dashboard/SpendLimitProgress";
 import { SpendTrendChart } from "@/components/dashboard/SpendTrendChart";
 import { UpcomingRenewalsList } from "@/components/dashboard/UpcomingRenewalsList";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
@@ -97,6 +98,14 @@ export default function DashboardScreen() {
         ) : (
           <>
             <DashboardStats summary={summary} />
+
+            <SpendLimitProgress
+              spendLimit={summary.spendLimit}
+              currentMonthSpend={summary.currentMonthSpend}
+              percentageUsed={summary.percentageUsed}
+              isOverLimit={summary.isOverLimit}
+              baseCurrency={summary.baseCurrency}
+            />
 
             <Card className="gap-4">
               <Text className="font-sans-semibold text-base text-text-primary">Spend Trend</Text>
