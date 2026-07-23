@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 10 — Push Notifications (v2)
-**Last completed:** 26 Renewal + Spend-Limit Push Dispatch Job — API
-**Next:** 27 Gmail Connection API (Phase 11 — Email Auto-Detection)
+**Phase:** Phase 11 — Email Auto-Detection (v2)
+**Last completed:** 27 Gmail Connection API
+**Next:** 28 Email Scan + Parsing Job — API
 
 ---
 
@@ -69,6 +69,13 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 24 Push Token Registration — Mobile
 - [x] 25 Notification Preferences + Alerts Tab — Web + Mobile (UI + Wiring)
 - [x] 26 Renewal + Spend-Limit Push Dispatch Job — API
+
+### Phase 11 — Email Auto-Detection (v2)
+
+- [x] 27 Gmail Connection API
+- [ ] 28 Email Scan + Parsing Job — API
+- [ ] 29 Detected Subscriptions Review — Web UI (mock data)
+- [ ] 30 Detected Subscriptions Review — Web Wiring
 
 ---
 
@@ -248,6 +255,14 @@ Update this file after every completed feature. Any AI agent reading this should
 - **26 — no reminder de-duplication.** A subscription renewing in 3 days will be picked up by the reminder query again tomorrow (2 days out) and the day after (1 day out) — nothing tracks "already reminded for this renewal." `build-plan.md`'s spec for this feature doesn't call for de-duplication or a sent-log table, and adding one wasn't scoped here; flagging in case repeat reminders for the same upcoming renewal turn out to be unwanted UX later (would need a `last_reminded_at`-style column or a dedicated log table).
 - **26 — spend-limit alert scope.** One push per user per run, not one per subscription — if a user has `spendLimitAlertsEnabled` and any upcoming (within-3-days) renewal would push `currentMonthSpend` over `monthlySpendLimit`, a single alert is sent summarizing the projected total against the limit, rather than a separate notification per contributing subscription.
 - **26 — verification.** `tsc --noEmit`, `eslint`, and `npm run build` (Nest production build) all clean. Ran the job end-to-end via the new `npm run trigger:notification-dispatch` script against the live local Postgres DB (real data, not mocked): correctly found 2 upcoming-renewal reminders and 1 spend-limit-alert condition among the seeded/test data, queued all 3 as `ExpoPushMessage`s, and attempted a real send via `expo-server-sdk`. Expo's push API correctly rejected the stored dev/test token (`ExponentPushToken[abc123]`, format-valid per `Expo.isExpoPushToken` but never actually registered with Apple/Google) with a per-ticket `"...is not a valid Expo push token"` error — confirming the job's error handling, per-ticket failure counting, and completion logging all work correctly without crashing on a real rejected send. A real end-to-end delivery (actual device receiving a push) remains untestable until a genuine Expo push token exists, same deferral already logged for feature 24's mobile push-token registration (no EAS project/dev build yet).
+- **27 Gmail Connection API.** New `IntegrationsModule` (`modules/integrations/`) — `GmailIntegrationController`/`GmailIntegrationService`, plus `EmailConnection` entity (`email_connections` table, unique on `(user_id, provider)`, added to `architecture.md`'s schema and `database/entities.ts`). Installed `google-auth-library` (not the full `googleapis` package — `OAuth2Client` alone covers the consent-URL + token-exchange flow this feature needs; `googleapis`/direct Gmail REST calls are a feature-28 decision, not made here). Added a new `library-docs.md` section for it.
+- **27 — the callback has no Authorization header.** Google's redirect to `GET /integrations/gmail/callback` is a plain browser navigation — there's no Bearer token to identify the user, so `JwtAuthGuard` can't sit on this route the way every other controller does. Solved by carrying the userId through the OAuth `state` param as a short-lived (10 minute) JWT signed with the existing `JWT_ACCESS_SECRET` (a `purpose: 'gmail_oauth_state'` claim distinguishes it from a real access token), verified on callback before any call to Google. This is also this flow's only CSRF protection, per `google-auth-library`'s own `state` param docs (confirmed via Context7, not assumed).
+- **27 — callback responds with a redirect, not JSON.** Breaks from `api-contract.md`'s universal `{ success, data?, error? }` shape on purpose — the browser is mid-navigation from Google's consent screen, not making a `fetch()` call, so a JSON body has nowhere useful to go. Always ends in a `302` to `{WEB_APP_URL}/settings?gmail=connected|error`, documented as an explicit exception in `api-contract.md`. Feature 29/30 (Settings' Gmail connect/disconnect control) will read that query param to show a toast.
+- **27 — `prompt: 'consent'` forced on every connect.** Google only returns a `refresh_token` on a user's *first* consent by default; forcing the consent screen every time (`prompt: 'consent'`, alongside `access_type: 'offline'`) makes reconnect-after-disconnect and token-refresh-failure recovery reliably get a fresh `refresh_token` too, rather than silently getting none on a second pass. Documented in `library-docs.md`.
+- **27 — tokens encrypted at rest.** New hand-rolled `common/utils/encryption.util.ts` (AES-256-GCM via Node's built-in `crypto`, no new dependency — same preference already established for `cookie.util.ts`/`SnakeNamingStrategy`), keyed by a new `TOKEN_ENCRYPTION_KEY` env var (32-byte hex). `access_token`/`refresh_token` are encrypted before every write to `email_connections` and never logged. Unit-tested (`encryption.util.spec.ts`) for round-trip correctness, IV randomness, and wrong-key failure.
+- **27 — reconnect is an upsert, not a duplicate row.** `handleCallback` looks up the existing `(userId, 'gmail')` row first; if found, updates the encrypted access token (and the refresh token too, only if Google actually returned a new one — it's nullable on subsequent grants without `prompt=consent`, though this feature always sends it) rather than inserting a second row, consistent with the table's unique constraint.
+- **27 — no status/read endpoint.** `build-plan.md`'s spec for this feature lists exactly three endpoints (connect, callback, disconnect) — no `GET` to check current connection state. Settings' "Connect Gmail" / "Disconnect" control (feature 29/30) will need one; deliberately left out here per "scope is sacred," to be added when that feature is actually built.
+- **27 — verification.** `tsc`/`npm run build` and `eslint` both clean; new `encryption.util.spec.ts` passing (3 tests: round-trip, IV randomness, wrong-key failure). Migration generated then hand-trimmed — TypeORM's schema diff also picked up unrelated churn (the `exchange_rates` expression unique index from feature 09, invisible to entity decorators, plus a no-op re-declare of three existing subscription enums) and would have dropped that real index if left in; stripped the migration down to just the `email_connections` table + FK, same "hand-edit past what the generator can express" precedent as feature 09. Ran migration against the live local Postgres DB, then exercised every endpoint live against the running API (real DB, real seeded user, no mocks): unauthenticated `connect` → 401; authenticated `connect` → a well-formed Google consent URL with the correct scope/`redirect_uri`/signed `state`; `disconnect` with no existing connection → `200` (idempotent); callback with missing `code`/`state` → redirects to `?gmail=error`; callback with a tampered `state` → rejected before any network call, redirects to `?gmail=error`; callback with a validly-signed `state` but a fake `code` → real network round-trip to Google's token endpoint, fails gracefully, redirects to `?gmail=error` (no crash, no unhandled JSON error page). **Not testable in this environment:** a real successful connect — `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REDIRECT_URI` in `.env` are placeholder values (no Google Cloud OAuth client has been created for this project yet). A future session needs a real Google Cloud project (OAuth consent screen configured, `http://localhost:8000/integrations/gmail/callback` registered as an authorized redirect URI) to exercise the full success path end-to-end.
 
 ---
 

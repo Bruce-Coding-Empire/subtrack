@@ -272,6 +272,10 @@ async function apiFetch<T>(
 | `JWT_REFRESH_SECRET`      | apps/api             |                                    |
 | `REFRESH_TOKEN_MAX_AGE_MS` | apps/api             | Refresh cookie lifetime in ms — must match the refresh JWT's `expiresIn` ("7d") in `auth.service.ts` |
 | `EXCHANGE_RATE_API_URL`   | apps/api             | exchangerate.host base URL        |
+| `GOOGLE_CLIENT_ID`         | apps/api             | Google Cloud OAuth client — Gmail read-only scope, feature 27 |
+| `GOOGLE_CLIENT_SECRET`     | apps/api             | Google Cloud OAuth client secret — never logged, never sent to a client |
+| `GOOGLE_REDIRECT_URI`      | apps/api             | Must exactly match a redirect URI registered on the Google Cloud OAuth client |
+| `TOKEN_ENCRYPTION_KEY`     | apps/api             | 32-byte hex key, AES-256-GCM — encrypts `email_connections` tokens at rest, see `common/utils/encryption.util.ts` |
 | `NEXT_PUBLIC_API_URL`     | apps/web             | Exposed to browser — API base URL |
 | `NEXT_PUBLIC_SITE_URL`    | apps/web             | Exposed to browser — canonical site URL, resolves `metadataBase` for OG/Twitter images |
 | `EXPO_PUBLIC_API_URL`     | apps/mobile           | Exposed to app bundle — API base URL |
@@ -314,7 +318,7 @@ Never install a package without a clear reason. Check first:
 
 Approved dependencies:
 
-**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`, `expo-server-sdk` (feature 26 — sends renewal-reminder and spend-limit-alert push notifications to stored Expo push tokens from `NotificationDispatchJob`)
+**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`, `expo-server-sdk` (feature 26 — sends renewal-reminder and spend-limit-alert push notifications to stored Expo push tokens from `NotificationDispatchJob`), `google-auth-library` (feature 27 — `OAuth2Client` for the Gmail read-only OAuth2 consent/token-exchange flow; the heavier `googleapis` package is deferred to feature 28, only if Gmail message-fetching needs more than a plain authenticated `fetch()` against the Gmail REST API)
 
 **apps/web:** `tailwindcss`, `shadcn/ui` components, `recharts`, `lucide-react`, `zod` (form validation), `react-hook-form` + `@hookform/resolvers` (unavoidable peer dependencies of shadcn/ui's `Form` component — same treatment as `passport` under `@nestjs/passport` in `apps/api`)
 

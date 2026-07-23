@@ -3,6 +3,7 @@ import { NotificationPreference } from '@/modules/notifications/entities/notific
 import { Subscription } from '@/modules/subscriptions/entities/subscription.entity';
 import { PaymentHistory } from '@/modules/subscriptions/entities/payment-history.entity';
 import { ExchangeRate } from '@/modules/currency/entities/exchange-rate.entity';
+import { EmailConnection } from '@/modules/integrations/entities/email-connection.entity';
 
 export const entities = [
   User,
@@ -10,4 +11,5 @@ export const entities = [
   Subscription,
   PaymentHistory,
   ExchangeRate,
+  EmailConnection,
 ];

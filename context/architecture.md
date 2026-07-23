@@ -108,11 +108,17 @@
 │   │       │   │   ├── renewal.job.ts
 │   │       │   │   ├── exchange-rate.job.ts
 │   │       │   │   └── notification-dispatch.job.ts
-│   │       │   └── notifications/
-│   │       │       ├── notifications.module.ts
-│   │       │       ├── notifications.controller.ts
-│   │       │       ├── notifications.service.ts
-│   │       │       └── entities/notification-preference.entity.ts
+│   │       │   ├── notifications/
+│   │       │   │   ├── notifications.module.ts
+│   │       │   │   ├── notifications.controller.ts
+│   │       │   │   ├── notifications.service.ts
+│   │       │   │   └── entities/notification-preference.entity.ts
+│   │       │   └── integrations/
+│   │       │       ├── integrations.module.ts
+│   │       │       ├── gmail-integration.controller.ts
+│   │       │       ├── gmail-integration.service.ts
+│   │       │       ├── dto/
+│   │       │       └── entities/email-connection.entity.ts
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
 │   │           │   └── jwt-auth.guard.ts
@@ -291,6 +297,19 @@ Unique constraint on `(base_currency, target_currency, fetched_at::date)`. Reads
 | spend_limit_alerts_enabled | boolean | Default false               |
 | push_token                | text    | Nullable                    |
 
+### `email_connections` (v2 — Phase 11, Gmail read-only OAuth connection)
+
+| Column                    | Type        | Notes                     |
+| -------------------------- | ----------- | --------------------------- |
+| id                          | uuid        | Primary key                |
+| user_id                     | uuid        | References users           |
+| provider                    | text        | Default `'gmail'`           |
+| access_token_encrypted      | text        | AES-256-GCM, see `common/utils/encryption.util.ts` |
+| refresh_token_encrypted     | text        | Nullable — Google only returns a refresh token when `prompt=consent` forces it |
+| connected_at                | timestamptz |                             |
+
+Unique constraint on `(user_id, provider)` — one connection per provider per user. Written only by `GmailIntegrationService` (`modules/integrations/`); read by the (not-yet-built) `EmailScanJob` in feature 28.
+
 ---
 
 ## Auth
@@ -319,3 +338,4 @@ Rules the AI agent must never violate:
 - Every endpoint validates its DTO with `class-validator` before touching the service layer.
 - JWT access tokens are never stored in localStorage on web — httpOnly cookie only.
 - Scheduled jobs always wrap their work in try/catch and log failures — one failed subscription must never stop the whole run.
+- Gmail OAuth tokens are never stored in plaintext — always through `common/utils/encryption.util.ts` before hitting `email_connections`, and never logged.
