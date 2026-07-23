@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 6 — Mobile App
-**Last completed:** 17 Mobile Settings
-**Next:** None — all 17 build-plan features complete. See `build-plan.md`'s v2 Roadmap for what's next.
+**Phase:** Phase 7 — Spend Limits (v2)
+**Last completed:** 18 Spend Limits API
+**Next:** 19 Spend Limits — Web UI (mock data)
 
 ---
 
@@ -48,6 +48,13 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 15 Mobile Subscriptions
 - [x] 16 Mobile Dashboard
 - [x] 17 Mobile Settings
+
+### Phase 7 — Spend Limits (v2)
+
+- [x] 18 Spend Limits API
+- [ ] 19 Spend Limits — Web UI (mock data)
+- [ ] 20 Spend Limits — Web Wiring
+- [ ] 21 Spend Limits — Mobile (UI + Wiring)
 
 ---
 
@@ -182,6 +189,13 @@ Update this file after every completed feature. Any AI agent reading this should
 - **17 Mobile Settings.** `SpendLimitSection`/`NotificationsSection` are static, disabled-input v2-scaffolded sections per `ui-rules.md` (`bg-info-light`/`text-info-foreground` "Coming in v2" badge — both tokens already existed in `tailwind.config.js`/`constants/colors.ts` since feature 15/16's dashboard/subscription badge work, no backfill needed this time). Notifications' toggle uses React Native's built-in `Switch` (`disabled`, `value={false}`) rather than a custom component — first use of `Switch` in this codebase, no new dependency. Added a small shared `components/ui/ComingSoonBadge.tsx` since the identical badge markup is needed in both sections verbatim (unlike most mobile UI so far, which has stayed feature-specific).
 - **17 Mobile Settings.** Settings screen header now shows the real avatar-circle-plus-name pattern `ui-rules.md` specifies ("same avatar pattern as web" — `bg-accent-light` circle, `text-accent` initial letter, name alongside), replacing the placeholder centered "Settings / Coming soon" text from feature 14. Sign Out (not itself part of any numbered feature's spec, but the only way to flip the auth guard back to unauthenticated for testing, per the original feature-14 placeholder's own note) is kept, now at the bottom of the scrollable content below the v2 sections rather than centered alone.
 - **17 Mobile Settings — verification.** `npx tsc --noEmit` and `npx expo lint` both clean across `apps/mobile`. Did **not** start a competing `expo start` instance — the user's own dev servers were already listening on 3000 (web) and 8081/8090 (Metro) at verification time, same reasoning as feature 16 (avoid colliding with an already-running session; Fast Refresh against it is the real verification path since the user tests mobile UI themselves). The API dev server (port 3001) was not running at verification time, so no live `curl`/in-app round-trip against `/users/me` was possible from this session — the endpoint itself was already verified end-to-end in feature 13's web wiring, and this feature only adds a second client against the same unchanged contract. Real on-device verification (avatar/name header, dirty-save gate, currency picker, disabled v2 sections, Switch styling) is outstanding — same category of gap as every mobile feature since 14.
+
+- **18 Spend Limits API.** **Real bug found and fixed while building this:** `User.monthlySpendLimit` was declared `@Column('numeric', { nullable: true })` with no `numericTransformer` — the exact string-vs-number gap already flagged and fixed for `Subscription.cost`/`PaymentHistory.amount` (feature 05) and `ExchangeRate.rate` (feature 09), just never hit for this column since nothing read or wrote it until now. Fixed by applying `numericTransformer`, same as the other three. No migration needed (column type unchanged).
+- **18 Spend Limits API.** `UpdateUserDto.monthlySpendLimit` is `@IsOptional() @IsNumber() @Min(0)`, typed `number | null`. class-validator's `@IsOptional()` already skips all further validation when the value is `null` (not just `undefined`), so no extra `@ValidateIf` was needed to let `null` (clear the limit) through untouched while still rejecting negative numbers. `UsersService.updateProfile()` follows the same explicit `if (dto.x !== undefined) user.x = dto.x` pattern the feature-13 `Object.assign` bug fix established — `undefined` (field omitted) leaves the column untouched, `null` (field explicitly sent) clears it.
+- **18 Spend Limits API.** `GET /dashboard/summary`'s new `currentMonthSpend` is deliberately a second, independent computation from `totalMonthlySpend` — the latter is a forward-looking projection (`toMonthlyEquivalent()` over active subscriptions' billing cycles, unchanged from feature 10), the former is actual `payment_history` rows with `paid_at` in the current calendar month (UTC), summed per-currency and converted to `baseCurrency` via the same `convertSafely()` a cache-miss already degrades gracefully for. `percentageUsed`/`isOverLimit` are both `null`/`false` when `monthlySpendLimit` is unset, per `build-plan.md` feature 19's "no-limit-set state shows a CTA, not a zeroed bar" requirement — the web/mobile UI (features 19–21) can gate on `spendLimit === null` alone.
+- **18 Spend Limits API.** `spendLimit` is treated as already denominated in `baseCurrency` (no conversion applied) — `users` has no separate currency column for the limit, and `architecture.md`'s schema note doesn't say otherwise. A judgment call, not a documented spec; revisit only if a future feature wants the limit to survive a `baseCurrency` change unconverted (today it would silently mean something different in the new currency).
+- **18 Spend Limits API.** `DashboardService`'s private `getBaseCurrency(userId)` was widened to `getUser(userId): Promise<User>` (still throws `NotFoundException` the same way) since `getSummary()` now needs `monthlySpendLimit` off the same user row it already had to fetch for `baseCurrency` — avoids a second `UsersService.findById()` call. `getSpendTrend()` destructures just `{ baseCurrency }` from the same method, unchanged behavior.
+- **18 Spend Limits API.** Verified end-to-end against a live `nest start --watch` instance (port 8000) and the real local Postgres DB, not just `tsc`/`eslint`/`jest` (all clean, 16/16 tests still passing — no new unit tests added, matching this codebase's existing convention of not unit-testing `UsersService`/`DashboardService` directly): `GET`/`PATCH /users/me` round-trips `monthlySpendLimit` as a real JSON number (not a quoted string — confirms the transformer fix), setting it to `200` then `null` both persist and read back correctly, a negative value is rejected with `400 monthlySpendLimit must not be less than 0`. For `GET /dashboard/summary`: with no limit set, `spendLimit`/`percentageUsed` are `null` and `isOverLimit` is `false`; inserted a real current-month `payment_history` row (50 USD, via a throwaway TypeORM script, same insert-verify-delete pattern as features 05/07/08/10) with a 50000 RWF limit set — `currentMonthSpend` came back correctly converted (~73,568 RWF) and `percentageUsed`/`isOverLimit` correctly reflected being over (147.1% / `true`). Cleaned up the throwaway row and restored the seeded test user's `monthlySpendLimit` to `null` afterward.
 
 ---
 
