@@ -309,6 +309,50 @@ async getConvertedAmount(amount: number, from: string, to: string): Promise<numb
 
 ---
 
+## google-auth-library (apps/api)
+
+**Check first:** AGENTS.md for an installed Google Auth skill or MCP.
+
+### OAuth2Client Setup
+
+```typescript
+// modules/integrations/gmail-integration.service.ts
+const oauth2Client = new OAuth2Client({
+  clientId: configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
+  clientSecret: configService.getOrThrow<string>('GOOGLE_CLIENT_SECRET'),
+  redirectUri: configService.getOrThrow<string>('GOOGLE_REDIRECT_URI'),
+});
+```
+
+### Consent URL + State
+
+```typescript
+const url = oauth2Client.generateAuthUrl({
+  access_type: 'offline', // required to receive a refresh_token
+  prompt: 'consent',      // forces the consent screen every time, so Google
+                          // reliably returns a refresh_token on reconnect too
+                          // (it's otherwise only issued on a user's *first* consent)
+  scope: ['https://www.googleapis.com/auth/gmail.readonly'],
+  state, // signed JWT carrying the requesting userId — see below
+});
+```
+
+### Token Exchange (callback)
+
+```typescript
+const { tokens } = await oauth2Client.getToken(code);
+// tokens.access_token, tokens.refresh_token — encrypt both before storing
+```
+
+**Rules:**
+
+- The OAuth callback (`GET /integrations/gmail/callback`) is hit directly by Google's redirect — there is no `Authorization` header to identify the user. Carry the userId through the `state` param instead: a short-lived (10 minute) JWT signed with `JWT_ACCESS_SECRET`, verified on callback before ever calling `getToken()`. Never trust an unsigned/plain userId in `state` — it's the only CSRF protection this flow has.
+- `access_token`/`refresh_token` are encrypted at rest via `common/utils/encryption.util.ts` (AES-256-GCM, `TOKEN_ENCRYPTION_KEY`) before being written to `email_connections` — never store either in plaintext, never log them.
+- The callback endpoint is not part of the `{ success, data?, error? }` JSON contract — it always ends in a `302` redirect back to the web app's `/settings` page (see `api-contract.md`). Wrap the whole handler in try/catch and redirect to an error state on any failure (invalid state, denied consent, failed token exchange) — never let it throw an unhandled JSON error page, since a browser is being redirected here, not a fetch client.
+- `getToken()` makes a real network call to Google — never call it from anywhere but the callback handler.
+
+---
+
 ## Swagger / OpenAPI (apps/api)
 
 **Check first:** AGENTS.md for an installed Swagger/Nest OpenAPI skill.
