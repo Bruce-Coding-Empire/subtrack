@@ -68,6 +68,8 @@ export class UsersService {
     try {
       if (dto.name !== undefined) user.name = dto.name;
       if (dto.baseCurrency !== undefined) user.baseCurrency = dto.baseCurrency;
+      if (dto.monthlySpendLimit !== undefined)
+        user.monthlySpendLimit = dto.monthlySpendLimit;
       const saved = await this.userRepo.save(user);
       return this.toProfileResponse(saved);
     } catch {

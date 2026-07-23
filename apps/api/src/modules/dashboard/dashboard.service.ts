@@ -1,8 +1,9 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThanOrEqual, Repository } from 'typeorm';
+import { Between, MoreThanOrEqual, Repository } from 'typeorm';
 import { CurrencyService } from '@/modules/currency/currency.service';
 import { UsersService } from '@/modules/users/users.service';
+import { User } from '@/modules/users/entities/user.entity';
 import { toMonthlyEquivalent } from '@/common/utils/spend.util';
 import {
   Subscription,
@@ -29,6 +30,10 @@ type SummaryResponse = {
     currency: string;
     nextRenewalDate: string;
   }[];
+  spendLimit: number | null;
+  currentMonthSpend: number;
+  percentageUsed: number | null;
+  isOverLimit: boolean;
 };
 
 type SpendTrendResponse = {
@@ -50,7 +55,8 @@ export class DashboardService {
   ) {}
 
   async getSummary(userId: string): Promise<SummaryResponse> {
-    const baseCurrency = await this.getBaseCurrency(userId);
+    const user = await this.getUser(userId);
+    const baseCurrency = user.baseCurrency;
 
     const activeSubscriptions = await this.subscriptionRepo.find({
       where: { userId, status: 'active' },
@@ -108,6 +114,17 @@ export class DashboardService {
         nextRenewalDate: subscription.nextRenewalDate,
       }));
 
+    const currentMonthSpend = await this.getCurrentMonthSpend(
+      userId,
+      baseCurrency,
+    );
+    const spendLimit = user.monthlySpendLimit;
+    const percentageUsed =
+      spendLimit !== null && spendLimit > 0
+        ? round((currentMonthSpend / spendLimit) * 100, 1)
+        : null;
+    const isOverLimit = spendLimit !== null && currentMonthSpend > spendLimit;
+
     return {
       totalMonthlySpend: round(totalMonthlySpend, 2),
       totalYearlySpend: round(totalMonthlySpend * 12, 2),
@@ -115,14 +132,48 @@ export class DashboardService {
       activeSubscriptionsCount: activeSubscriptions.length,
       categoryBreakdown,
       upcomingRenewals,
+      spendLimit,
+      currentMonthSpend: round(currentMonthSpend, 2),
+      percentageUsed,
+      isOverLimit,
     };
+  }
+
+  private async getCurrentMonthSpend(
+    userId: string,
+    baseCurrency: string,
+  ): Promise<number> {
+    const now = new Date();
+    const monthStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+    const nextMonth = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+    const monthEnd = formatDateUTC(new Date(nextMonth.getTime() - 1));
+
+    const history = await this.paymentHistoryRepo.find({
+      where: { userId, paidAt: Between(monthStart, monthEnd) },
+    });
+
+    const totalsByCurrency = new Map<string, number>();
+    for (const entry of history) {
+      totalsByCurrency.set(
+        entry.currency,
+        (totalsByCurrency.get(entry.currency) ?? 0) + entry.amount,
+      );
+    }
+
+    let total = 0;
+    for (const [currency, subtotal] of totalsByCurrency) {
+      total += await this.convertSafely(subtotal, currency, baseCurrency);
+    }
+    return total;
   }
 
   async getSpendTrend(
     userId: string,
     months: number,
   ): Promise<SpendTrendResponse> {
-    const baseCurrency = await this.getBaseCurrency(userId);
+    const { baseCurrency } = await this.getUser(userId);
     const monthKeys = buildMonthKeys(months);
 
     const history = await this.paymentHistoryRepo.find({
@@ -156,12 +207,12 @@ export class DashboardService {
     return { baseCurrency, points };
   }
 
-  private async getBaseCurrency(userId: string): Promise<string> {
+  private async getUser(userId: string): Promise<User> {
     const user = await this.usersService.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return user.baseCurrency;
+    return user;
   }
 
   private async convertSafely(

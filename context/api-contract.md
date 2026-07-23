@@ -142,11 +142,17 @@ Response:
     ],
     "upcomingRenewals": [
       { "id": "uuid", "name": "Netflix", "amount": 15.99, "currency": "USD", "nextRenewalDate": "2026-07-25" }
-    ]
+    ],
+    "spendLimit": 200.00,
+    "currentMonthSpend": 156.20,
+    "percentageUsed": 78.1,
+    "isOverLimit": false
   }
 }
 ```
 Amounts in `totalMonthlySpend`, `totalYearlySpend`, and `categoryBreakdown` are converted to `baseCurrency`. `upcomingRenewals` amounts stay in original currency. `activeSubscriptionsCount` is the count of `status = 'active'` subscriptions (drives the "Active Subscriptions" stat card in `ui-rules.md`) — `upcomingRenewals.length` covers the "Upcoming Renewals" stat card, so no separate count field is needed for that one.
+
+`spendLimit` mirrors `users.monthly_spend_limit` (`null` if the user hasn't set one — denominated in `baseCurrency`, same as the limit itself). `currentMonthSpend` is the sum of `payment_history` rows with `paid_at` in the current calendar month, converted to `baseCurrency` — this is actual money paid so far this month, distinct from `totalMonthlySpend`'s forward-looking projection off active subscriptions' billing cycles. `percentageUsed` is `round(currentMonthSpend / spendLimit * 100, 1)`, `null` when `spendLimit` is `null`. `isOverLimit` is `currentMonthSpend > spendLimit`, always `false` when `spendLimit` is `null`.
 
 ### `GET /dashboard/spend-trend`
 
@@ -182,10 +188,10 @@ Response:
 
 Request:
 ```json
-{ "name": "string (optional)", "baseCurrency": "string (ISO 4217, optional)" }
+{ "name": "string (optional)", "baseCurrency": "string (ISO 4217, optional)", "monthlySpendLimit": "number | null (optional)" }
 ```
 Response: updated user object.
-Note: `monthlySpendLimit` field exists on the user but has no v1 endpoint to set it — UI shows it as disabled/"Coming in v2".
+`monthlySpendLimit` accepts a non-negative number to set the limit, or `null` to clear it; omitting the field leaves it unchanged. Denominated in `baseCurrency` — no separate currency field.
 
 ---
 
