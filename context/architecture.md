@@ -107,7 +107,8 @@
 │   │       │   │   ├── scheduler.module.ts
 │   │       │   │   ├── renewal.job.ts
 │   │       │   │   ├── exchange-rate.job.ts
-│   │       │   │   └── notification-dispatch.job.ts
+│   │       │   │   ├── notification-dispatch.job.ts
+│   │       │   │   └── email-scan.job.ts
 │   │       │   ├── notifications/
 │   │       │   │   ├── notifications.module.ts
 │   │       │   │   ├── notifications.controller.ts
@@ -117,8 +118,10 @@
 │   │       │       ├── integrations.module.ts
 │   │       │       ├── gmail-integration.controller.ts
 │   │       │       ├── gmail-integration.service.ts
+│   │       │       ├── gmail-api.service.ts    → token refresh + Gmail REST fetch, used by email-scan.job.ts
 │   │       │       ├── dto/
-│   │       │       └── entities/email-connection.entity.ts
+│   │       │       ├── entities/email-connection.entity.ts
+│   │       │       └── entities/detected-subscription.entity.ts
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
 │   │           │   └── jwt-auth.guard.ts
@@ -129,7 +132,8 @@
 │   │           ├── decorators/
 │   │           │   └── current-user.decorator.ts
 │   │           └── utils/
-│   │               └── billing-cycle.util.ts   → next_renewal_date calculation
+│   │               ├── billing-cycle.util.ts   → next_renewal_date calculation
+│   │               └── email-parser.util.ts    → vendor/amount/currency/cycle heuristics for email-scan.job.ts
 │   │
 │   └── mobile/                              → Expo app
 │       ├── app/                            → Expo Router
@@ -228,6 +232,24 @@ Queued messages sent via expo-server-sdk in chunks
 Job completion logged (queued counts, sent count, failure count)
 ```
 
+### Email Scan Job
+
+```
+@nestjs/schedule cron fires daily (01:00 server time — independent of the other jobs, just spaced out)
+        ↓
+scheduler/email-scan.job.ts queries email_connections for every stored Gmail connection
+        ↓
+For each: gmail-api.service.ts refreshes an access token (via the stored refresh_token), then searches
+Gmail (subject/sender heuristics, last ~2 days) and fetches candidate message metadata + snippets
+        ↓
+Skips any gmail_message_id already present for that user; new ones parsed via email-parser.util.ts
+(vendor name from the From header, amount/currency/cycle from subject+snippet, best-effort)
+        ↓
+Inserted into detected_subscriptions as status: 'pending' — never written directly to subscriptions
+        ↓
+Job completion logged (detected count, already-seen count, failed-connection count)
+```
+
 ---
 
 ## Database Schema
@@ -308,7 +330,25 @@ Unique constraint on `(base_currency, target_currency, fetched_at::date)`. Reads
 | refresh_token_encrypted     | text        | Nullable — Google only returns a refresh token when `prompt=consent` forces it |
 | connected_at                | timestamptz |                             |
 
-Unique constraint on `(user_id, provider)` — one connection per provider per user. Written only by `GmailIntegrationService` (`modules/integrations/`); read by the (not-yet-built) `EmailScanJob` in feature 28.
+Unique constraint on `(user_id, provider)` — one connection per provider per user. Written only by `GmailIntegrationService` (`modules/integrations/`); read by `EmailScanJob` (`modules/scheduler/email-scan.job.ts`, feature 28).
+
+### `detected_subscriptions` (v2 — Phase 11, staging table for Gmail-detected subscriptions)
+
+| Column            | Type        | Notes                     |
+| ------------------ | ----------- | --------------------------- |
+| id                  | uuid        | Primary key                |
+| user_id             | uuid        | References users           |
+| gmail_message_id    | text        | Gmail's message id — dedupe key so a re-scan never re-detects the same email |
+| vendor_name         | text        | Nullable — parsed from the email's `From` header display name |
+| amount              | numeric     | Nullable — parsed from subject/snippet text, best-effort |
+| currency            | text        | Nullable — parsed alongside amount |
+| billing_cycle       | text (enum) | Nullable — `weekly`/`monthly`/`yearly`/`custom`, keyword-matched, often unresolvable from a single receipt email |
+| raw_subject         | text        | Original email subject — review-UI context for feature 29/30 |
+| received_at         | timestamptz | Nullable — Gmail's `internalDate` |
+| status              | text (enum) | `pending` / `approved` / `dismissed`, default `pending` |
+| detected_at         | timestamptz |                             |
+
+Unique constraint on `(user_id, gmail_message_id)`. Written only by `EmailScanJob` (always as `status: 'pending'`) — status transitions to `approved`/`dismissed` happen only via feature 30's review endpoints, never a direct insert/update elsewhere.
 
 ---
 
@@ -339,3 +379,4 @@ Rules the AI agent must never violate:
 - JWT access tokens are never stored in localStorage on web — httpOnly cookie only.
 - Scheduled jobs always wrap their work in try/catch and log failures — one failed subscription must never stop the whole run.
 - Gmail OAuth tokens are never stored in plaintext — always through `common/utils/encryption.util.ts` before hitting `email_connections`, and never logged.
+- `detected_subscriptions` is only ever inserted by `EmailScanJob` — no user-facing endpoint creates a row directly. Approving one (feature 30) creates a real `subscriptions` row through the existing `subscriptions.service` create path, it never mutates `detected_subscriptions` into a live subscription in place.
