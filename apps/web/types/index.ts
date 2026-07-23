@@ -119,3 +119,17 @@ export type NotificationPreferences = {
 };
 
 export type UpdateNotificationPreferencesInput = Partial<NotificationPreferences>;
+
+export type DetectedSubscriptionStatus = "pending" | "approved" | "dismissed";
+
+export type DetectedSubscription = {
+  id: string;
+  vendorName: string | null;
+  amount: number | null;
+  currency: string | null;
+  billingCycle: BillingCycle | null;
+  rawSubject: string;
+  receivedAt: string | null;
+  status: DetectedSubscriptionStatus;
+  detectedAt: string;
+};
