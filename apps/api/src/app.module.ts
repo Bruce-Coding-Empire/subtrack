@@ -10,6 +10,7 @@ import { UsersModule } from '@/modules/users/users.module';
 import { SubscriptionsModule } from '@/modules/subscriptions/subscriptions.module';
 import { SchedulerModule } from '@/modules/scheduler/scheduler.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DashboardModule } from '@/modules/dashboard/dashboard.module';
     SubscriptionsModule,
     SchedulerModule,
     DashboardModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
