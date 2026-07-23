@@ -24,6 +24,7 @@ export type UserProfile = User & {
 export type UpdateUserInput = {
   name?: string;
   baseCurrency?: string;
+  monthlySpendLimit?: number | null;
 };
 
 export type BillingCycle = "weekly" | "monthly" | "yearly" | "custom";
@@ -84,6 +85,10 @@ export type DashboardSummary = {
   activeSubscriptionsCount: number;
   categoryBreakdown: CategoryBreakdownEntry[];
   upcomingRenewals: UpcomingRenewal[];
+  spendLimit: number | null;
+  currentMonthSpend: number;
+  percentageUsed: number | null;
+  isOverLimit: boolean;
 };
 
 export type SpendTrendPoint = {

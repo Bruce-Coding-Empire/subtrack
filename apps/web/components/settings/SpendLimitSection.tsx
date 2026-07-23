@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { updateCurrentUserProfile } from "@/lib/users";
 import type { UserProfile } from "@/types";
 
 type Props = {
@@ -19,13 +20,23 @@ function toInputValue(limit: number | null): string {
 
 export function SpendLimitSection({ profile, onSaved }: Props) {
   const [value, setValue] = useState(toInputValue(profile.monthlySpendLimit));
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isNegative = value.trim() !== "" && Number(value) < 0;
   const isDirty = value !== toInputValue(profile.monthlySpendLimit);
 
-  function handleSave() {
+  async function handleSave() {
     const monthlySpendLimit = value.trim() === "" ? null : Number(value);
-    onSaved({ ...profile, monthlySpendLimit });
+    setIsSaving(true);
+    setSaveError(null);
+    const result = await updateCurrentUserProfile({ monthlySpendLimit });
+    if (result.success && result.data) {
+      onSaved(result.data);
+    } else {
+      setSaveError(result.error ?? "Failed to save spend limit — please try again");
+    }
+    setIsSaving(false);
   }
 
   return (
@@ -49,11 +60,17 @@ export function SpendLimitSection({ profile, onSaved }: Props) {
           {isNegative && <p className="text-xs text-error">Limit must not be negative</p>}
         </div>
 
+        {saveError && (
+          <p role="alert" className="text-xs text-error">
+            {saveError}
+          </p>
+        )}
+
         <div className="flex justify-end">
           <Button
             type="button"
             onClick={handleSave}
-            disabled={!isDirty || isNegative}
+            disabled={!isDirty || isNegative || isSaving}
             className="bg-accent text-accent-foreground hover:bg-accent-dark"
           >
             Save Changes

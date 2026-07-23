@@ -10,7 +10,6 @@ import { SpendTrendChart } from "@/components/dashboard/SpendTrendChart";
 import { UpcomingRenewalsList } from "@/components/dashboard/UpcomingRenewalsList";
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState";
 import { getDashboardSummary, getSpendTrend } from "@/lib/dashboard";
-import { mockSpendLimitSummary } from "@/lib/mock-spend-limit";
 import type { DashboardSummary, SpendTrend } from "@/types";
 
 export function DashboardPageClient() {
@@ -83,10 +82,10 @@ export function DashboardPageClient() {
           <DashboardStats summary={summary} />
 
           <SpendLimitProgress
-            spendLimit={mockSpendLimitSummary.spendLimit}
-            currentMonthSpend={mockSpendLimitSummary.currentMonthSpend}
-            percentageUsed={mockSpendLimitSummary.percentageUsed}
-            isOverLimit={mockSpendLimitSummary.isOverLimit}
+            spendLimit={summary.spendLimit}
+            currentMonthSpend={summary.currentMonthSpend}
+            percentageUsed={summary.percentageUsed}
+            isOverLimit={summary.isOverLimit}
             baseCurrency={summary.baseCurrency}
           />
 
