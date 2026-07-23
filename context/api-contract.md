@@ -223,6 +223,34 @@ Stores the Expo push token for the current user, overwriting any previously stor
 
 ---
 
+## Integrations
+
+### `GET /integrations/gmail/connect`
+
+Authenticated. Response:
+```json
+{ "success": true, "data": { "url": "https://accounts.google.com/o/oauth2/v2/auth?..." } }
+```
+`url` is the Google consent screen URL — the client should navigate the browser to it directly (not a `fetch()` call). `state` is a short-lived (10 minute) signed JWT carrying the requesting user's id; Google echoes it back unmodified on the callback.
+
+### `GET /integrations/gmail/callback`
+
+Not authenticated (no `Authorization` header is available — this is a browser redirect from Google, not a client API call) and not JSON — always responds with a `302` redirect to `{WEB_APP_URL}/settings`, never the `{ success, data?, error? }` shape. Query params (`code`, `state` from Google, or `error` if the user declined consent) determine the redirect:
+
+| Outcome                              | Redirect                          |
+| -------------------------------------- | ------------------------------------ |
+| Connected successfully                    | `/settings?gmail=connected`         |
+| User declined consent, missing/invalid params, invalid or expired `state`, or token exchange failed | `/settings?gmail=error` |
+
+Both clients treat this purely as a browser-navigation endpoint — `lib/api-client.ts` never calls it directly. The web Settings page reads the `gmail` query param on load to show a connected/error toast. Mobile is out of scope (see feature 30's note — OAuth consent is a web-browser-native flow).
+
+### `DELETE /integrations/gmail/disconnect`
+
+Authenticated. Deletes the current user's stored Gmail connection, if any (idempotent — succeeds even if no connection exists).
+Response: `{ "success": true }`
+
+---
+
 ## Error Responses
 
 All errors follow:
