@@ -219,7 +219,7 @@ For each app: UI built with mock data first, verified visually, then wired to th
 
 ## v2 Roadmap
 
-v1 (above) is complete and shipped. Nothing below is started or committed — these are full specs so a future session can pick one up and start building directly, the same level of detail as Phases 1–6, continuing the numbering from 18. Build order across phases matters: Phase 8 (push notifications) depends on Phase 7's spend-limit fields for its spend-limit-alert half; Phase 9 and 10 are independent of everything else and of each other.
+v1 (above) is complete and shipped. Nothing below is started or committed — these are full specs so a future session can pick one up and start building directly, the same level of detail as Phases 1–6, continuing the numbering from 18. Build order across phases matters: Phase 10 (push notifications) depends on Phase 7's spend-limit fields for its spend-limit-alert half; Phase 11 and 12 are independent of everything else and of each other. Phase 8 (landing page) is fully static and independent of every other v2 phase; Phase 9 (mobile spend limits) depends only on Phase 7's API (18), not on Phase 8.
 
 ---
 
@@ -254,7 +254,34 @@ v1 (above) is complete and shipped. Nothing below is started or committed — th
 
 ---
 
-### 21 Spend Limits — Mobile (UI + Wiring)
+## Phase 8 — Landing Page (v2)
+
+`architecture.md` has always listed `/ → Landing page` in its Pages/Screens table, but no numbered feature ever claimed it — `/` is still the unmodified `create-next-app` boilerplate (confirmed in `progress-tracker.md`'s feature-04 notes). This feature closes that gap. Content below is locked (decided in a design pass before implementation) — build to this spec, using `ui-tokens.md`/`ui-rules.md` and the existing component set (`Button`, `Card`, Lucide icons) rather than introducing new ones without sign-off.
+
+### 21 Landing Page — Web UI + Wiring
+
+**Content spec (locked):**
+
+- **Header** — logo ("SubTrack") + `Log in` (text link) + `Get Started` (Primary button). Separate from the authenticated `Navbar` (`components/layout/Navbar.tsx`), which stays behind auth in `(app)/layout.tsx`.
+- **Hero** — problem-first headline: "Your subscriptions are quietly draining you." Subhead: "Track every subscription, every currency, every renewal — in one place. See exactly what you're paying for, before it adds up." Primary CTA `Get Started` → `/register`, secondary `Log in` → `/login`. Below the copy: a scaled-down, non-interactive preview of the real dashboard (the 4 stat cards, category pie chart, spend trend line) populated with believable mock numbers — same spirit as `lib/mock-data.ts`, not live data.
+- **Problem strip** — thin band between hero and features: "Subscriptions renew silently. Spend creeps up over months. And when they're billed in different currencies, it's even harder to see the full picture."
+- **Feature highlights** — 3 `Card`s, each with an accent-colored Lucide icon:
+  1. **Track everything** — "Log every subscription once — streaming, software, gym, hosting. Any currency, any billing cycle: weekly, monthly, yearly, or custom."
+  2. **Never miss a renewal** — "SubTrack calculates when each subscription renews and keeps a running history of every payment, automatically."
+  3. **See where your money goes** — "One dashboard: total spend in your currency, category breakdown, and how your spend is trending over time."
+- **Closing CTA band** — `bg-accent`, white text (the one place besides the logo a strong accent fill is used): "Ready to see where your money's going?" + `Get Started — it's free` button → `/register`.
+
+**UI + Logic:**
+
+- Replaces the stock boilerplate at `/` (`apps/web/app/page.tsx`) with the page above
+- Fully static — no data fetching, no API wiring, no mock-then-real split needed
+- Decide whether `/` stays visible to authenticated visitors too, or gets added to `proxy.ts`'s redirect matcher (→ `/dashboard` if the `subtrack_session` marker cookie is present) — resolve during implementation, not assumed here
+
+---
+
+## Phase 9 — Spend Limits — Mobile (v2)
+
+### 22 Spend Limits — Mobile (UI + Wiring)
 
 **UI + Logic:**
 
@@ -263,11 +290,11 @@ v1 (above) is complete and shipped. Nothing below is started or committed — th
 
 ---
 
-## Phase 8 — Push Notifications (v2)
+## Phase 10 — Push Notifications (v2)
 
 `notification_preferences` table already exists (scaffolded in v1, currently unread/unwritten by any feature).
 
-### 22 Notification Preferences API
+### 23 Notification Preferences API
 
 **Logic:**
 
@@ -277,7 +304,7 @@ v1 (above) is complete and shipped. Nothing below is started or committed — th
 
 ---
 
-### 23 Push Token Registration — Mobile
+### 24 Push Token Registration — Mobile
 
 **UI + Logic:**
 
@@ -286,7 +313,7 @@ v1 (above) is complete and shipped. Nothing below is started or committed — th
 
 ---
 
-### 24 Notification Preferences + Alerts Tab — Web + Mobile (UI + Wiring)
+### 25 Notification Preferences + Alerts Tab — Web + Mobile (UI + Wiring)
 
 **UI:**
 
@@ -299,7 +326,7 @@ v1 (above) is complete and shipped. Nothing below is started or committed — th
 
 ---
 
-### 25 Renewal + Spend-Limit Push Dispatch Job — API
+### 26 Renewal + Spend-Limit Push Dispatch Job — API
 
 **Logic:**
 
@@ -311,11 +338,11 @@ v1 (above) is complete and shipped. Nothing below is started or committed — th
 
 ---
 
-## Phase 9 — Email Auto-Detection (v2)
+## Phase 11 — Email Auto-Detection (v2)
 
 Gmail OAuth (read-only), decided when this was specced — bank auto-detection is excluded outright, not just deferred (see "Dropped From v2" below).
 
-### 26 Gmail Connection API
+### 27 Gmail Connection API
 
 **Logic:**
 
@@ -325,16 +352,16 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 
 ---
 
-### 27 Email Scan + Parsing Job — API
+### 28 Email Scan + Parsing Job — API
 
 **Logic:**
 
 - `EmailScanJob` (daily) — for each connected user, fetches recent Gmail messages via the Gmail API, filters for subscription receipt/confirmation emails by sender/subject heuristics, parses vendor name / amount / currency / cycle where it can
-- Writes to a new staging table, `detected_subscriptions` (`status`: pending / approved / dismissed) — never creates a real `subscriptions` row directly; the user must confirm (feature 29)
+- Writes to a new staging table, `detected_subscriptions` (`status`: pending / approved / dismissed) — never creates a real `subscriptions` row directly; the user must confirm (feature 30)
 
 ---
 
-### 28 Detected Subscriptions Review — Web UI (mock data)
+### 29 Detected Subscriptions Review — Web UI (mock data)
 
 **UI:**
 
@@ -343,19 +370,19 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 
 ---
 
-### 29 Detected Subscriptions Review — Web Wiring
+### 30 Detected Subscriptions Review — Web Wiring
 
 **Logic:**
 
 - Wired to `GET /integrations/detected`, `POST /integrations/detected/:id/approve` (creates a real subscription through the existing `subscriptions.service` create path), `POST /integrations/detected/:id/dismiss`
-- Settings' Gmail connect/disconnect control wired to the OAuth endpoints from feature 26
+- Settings' Gmail connect/disconnect control wired to the OAuth endpoints from feature 27
 - Mobile: not scoped here — OAuth consent is a web-browser-native flow; revisit only if mobile support is explicitly wanted later
 
 ---
 
-## Phase 10 — Data Export (v2)
+## Phase 12 — Data Export (v2)
 
-### 30 Export API
+### 31 Export API
 
 **Logic:**
 
@@ -365,7 +392,7 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 
 ---
 
-### 31 Export — Web UI + Wiring
+### 32 Export — Web UI + Wiring
 
 **UI:**
 
@@ -382,16 +409,18 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 
 | Phase                              | Features |
 | ------------------------------------- | ---------- |
-| Phase 7 — Spend Limits                   | 4          |
-| Phase 8 — Push Notifications                | 4          |
-| Phase 9 — Email Auto-Detection                 | 4          |
-| Phase 10 — Data Export                            | 2          |
-| **Total**                                                  | **14**     |
+| Phase 7 — Spend Limits                   | 3          |
+| Phase 8 — Landing Page                      | 1          |
+| Phase 9 — Spend Limits — Mobile               | 1          |
+| Phase 10 — Push Notifications                | 4          |
+| Phase 11 — Email Auto-Detection                 | 4          |
+| Phase 12 — Data Export                            | 2          |
+| **Total**                                                  | **15**     |
 
 ---
 
 ## Dropped From v2
 
 - **Multi-currency base (per-portfolio)** — considered, then dropped. No clear use case was identified, and "portfolio" wasn't a concept defined anywhere else in this project's docs.
-- **Bank auto-detection of subscriptions** — excluded outright, not deferred. See Phase 9's Gmail-only approach above; brokering or storing bank credentials/access tokens carries security and liability weight disproportionate to this project.
-- **Mobile tab bar true centering** — no longer a standalone concern; resolved as a side effect of feature 24's new 5th "Alerts" tab.
+- **Bank auto-detection of subscriptions** — excluded outright, not deferred. See Phase 11's Gmail-only approach above; brokering or storing bank credentials/access tokens carries security and liability weight disproportionate to this project.
+- **Mobile tab bar true centering** — no longer a standalone concern; resolved as a side effect of feature 25's new 5th "Alerts" tab.
