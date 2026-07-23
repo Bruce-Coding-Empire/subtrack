@@ -314,7 +314,7 @@ Never install a package without a clear reason. Check first:
 
 Approved dependencies:
 
-**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`
+**apps/api:** `@nestjs/typeorm`, `typeorm`, `pg`, `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`, `class-validator`, `class-transformer`, `@nestjs/schedule`, `@nestjs/config`, `@nestjs/swagger`, `swagger-ui-express`, `expo-server-sdk` (feature 26 — sends renewal-reminder and spend-limit-alert push notifications to stored Expo push tokens from `NotificationDispatchJob`)
 
 **apps/web:** `tailwindcss`, `shadcn/ui` components, `recharts`, `lucide-react`, `zod` (form validation), `react-hook-form` + `@hookform/resolvers` (unavoidable peer dependencies of shadcn/ui's `Form` component — same treatment as `passport` under `@nestjs/passport` in `apps/api`)
 

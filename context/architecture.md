@@ -106,7 +106,8 @@
 │   │       │   ├── scheduler/
 │   │       │   │   ├── scheduler.module.ts
 │   │       │   │   ├── renewal.job.ts
-│   │       │   │   └── exchange-rate.job.ts
+│   │       │   │   ├── exchange-rate.job.ts
+│   │       │   │   └── notification-dispatch.job.ts
 │   │       │   └── notifications/
 │   │       │       ├── notifications.module.ts
 │   │       │       ├── notifications.controller.ts
@@ -202,6 +203,23 @@ scheduler/exchange-rate.job.ts calls exchangerate.host
 Upserts rates into exchange_rates table, keyed by currency pair + date
         ↓
 Dashboard reads always hit the cached table — never the live API
+```
+
+### Push Notification Dispatch Job
+
+```
+@nestjs/schedule cron fires daily (00:15 server time, after renewal.job.ts's 00:05 run)
+        ↓
+scheduler/notification-dispatch.job.ts queries notification_preferences for renewalRemindersEnabled /
+spendLimitAlertsEnabled users with a stored push token
+        ↓
+For each: finds subscriptions renewing in the next 3 days; renewal reminders are queued directly,
+spend-limit alerts are queued only if projected current-month spend (via dashboard.service.ts's
+getCurrentMonthSpend + currency.service.ts conversion) would exceed the user's monthlySpendLimit
+        ↓
+Queued messages sent via expo-server-sdk in chunks
+        ↓
+Job completion logged (queued counts, sent count, failure count)
 ```
 
 ---
