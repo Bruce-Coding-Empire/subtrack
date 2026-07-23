@@ -252,6 +252,8 @@ Not authenticated (no `Authorization` header is available — this is a browser 
 
 Both clients treat this purely as a browser-navigation endpoint — `lib/api-client.ts` never calls it directly. The web Settings page reads the `gmail` query param on load to show a connected/error banner. Mobile is out of scope (see feature 30's note — OAuth consent is a web-browser-native flow).
 
+Google's real redirect includes extra query params beyond `code`/`state`/`error` (`iss`, `scope`, `authuser`, `prompt`, sometimes `hd`) — this route reads `code`/`state`/`error` off the raw query object and ignores everything else rather than validating against a fixed DTO shape, since we don't control Google's query string contract.
+
 ### `DELETE /integrations/gmail/disconnect`
 
 Authenticated. Deletes the current user's stored Gmail connection, if any (idempotent — succeeds even if no connection exists).
