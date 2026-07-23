@@ -8,6 +8,7 @@ import {
   register as registerRequest,
   subscribeToSessionInvalidation,
 } from "@/lib/auth";
+import { registerForPushNotificationsAsync } from "@/lib/notifications";
 import type { ApiResponse, AuthResponse, User } from "@/lib/types";
 // User (not UserProfile) is intentional here — the session only needs the
 // fields shared with auth's login/register response (id/name/email/base
@@ -62,6 +63,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
       setUser(null);
     });
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerForPushNotificationsAsync();
+    }
+  }, [isAuthenticated]);
 
   async function signIn(email: string, password: string): Promise<ApiResponse<AuthResponse>> {
     const result = await loginRequest(email, password);
