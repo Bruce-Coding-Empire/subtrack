@@ -5,7 +5,7 @@ import { SpendTrendChart } from "@/components/dashboard/SpendTrendChart";
 import type { CategoryBreakdownEntry, SpendTrendPoint } from "@/types";
 
 const MOCK_STATS = [
-  { label: "Total Monthly Spend", value: "$284.50" },
+  { label: "Total Monthly Spend", value: "$284.5" },
   { label: "Total Yearly Spend", value: "$3,414" },
   { label: "Active Subscriptions", value: "14" },
   { label: "Upcoming Renewals (7d)", value: "3" },
