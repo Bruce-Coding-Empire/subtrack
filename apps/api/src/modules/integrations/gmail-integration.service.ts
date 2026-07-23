@@ -111,6 +111,20 @@ export class GmailIntegrationService {
     }
   }
 
+  async isConnected(userId: string): Promise<boolean> {
+    try {
+      const count = await this.connectionRepo.count({
+        where: { userId, provider: PROVIDER },
+      });
+      return count > 0;
+    } catch (error) {
+      this.logger.error('[GmailIntegrationService.isConnected] Failed', error);
+      throw new InternalServerErrorException(
+        'Failed to check Gmail connection status',
+      );
+    }
+  }
+
   async disconnect(userId: string): Promise<void> {
     try {
       await this.connectionRepo.delete({ userId, provider: PROVIDER });

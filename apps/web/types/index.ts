@@ -133,3 +133,7 @@ export type DetectedSubscription = {
   status: DetectedSubscriptionStatus;
   detectedAt: string;
 };
+
+export type GmailConnectionStatus = {
+  connected: boolean;
+};

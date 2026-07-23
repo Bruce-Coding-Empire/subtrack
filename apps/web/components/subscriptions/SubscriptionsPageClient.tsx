@@ -9,12 +9,8 @@ import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilt
 import { SubscriptionsPagination } from "@/components/subscriptions/SubscriptionsPagination";
 import { SubscriptionsTable } from "@/components/subscriptions/SubscriptionsTable";
 import { listSubscriptions } from "@/lib/subscriptions";
-import { mockDetectedSubscriptions } from "@/lib/mock-detected-subscriptions";
+import { listDetectedSubscriptions } from "@/lib/detected-subscriptions";
 import type { Subscription, SubscriptionStatus } from "@/types";
-
-const PENDING_DETECTED_COUNT = mockDetectedSubscriptions.filter(
-  (detected) => detected.status === "pending",
-).length;
 
 type StatusFilter = SubscriptionStatus | "all";
 
@@ -31,11 +27,29 @@ export function SubscriptionsPageClient() {
   const [refreshToken, setRefreshToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDetectedCount, setPendingDetectedCount] = useState(0);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timeout);
   }, [search]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDetectedCount() {
+      const result = await listDetectedSubscriptions();
+      if (cancelled) return;
+      if (result.success && result.data) {
+        setPendingDetectedCount(result.data.items.length);
+      }
+    }
+
+    loadDetectedCount();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +104,7 @@ export function SubscriptionsPageClient() {
         <AddSubscriptionDialog onCreated={handleCreated} />
       </div>
 
-      <DetectedSubscriptionsBanner count={PENDING_DETECTED_COUNT} />
+      <DetectedSubscriptionsBanner count={pendingDetectedCount} />
 
       <Card>
         <CardContent className="flex flex-col gap-4">

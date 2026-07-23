@@ -119,6 +119,8 @@
 │   │       │       ├── gmail-integration.controller.ts
 │   │       │       ├── gmail-integration.service.ts
 │   │       │       ├── gmail-api.service.ts    → token refresh + Gmail REST fetch, used by email-scan.job.ts
+│   │       │       ├── detected-subscriptions.controller.ts   → GET/approve/dismiss for the review UI, feature 30
+│   │       │       ├── detected-subscriptions.service.ts
 │   │       │       ├── dto/
 │   │       │       ├── entities/email-connection.entity.ts
 │   │       │       └── entities/detected-subscription.entity.ts

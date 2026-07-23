@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   description: "Manage your profile, currency, and preferences.",
 };
 
-export default function SettingsPage() {
-  return <SettingsPageClient />;
+type Props = {
+  searchParams: Promise<{ gmail?: string }>;
+};
+
+export default async function SettingsPage({ searchParams }: Props) {
+  const { gmail } = await searchParams;
+  const gmailStatus = gmail === "connected" || gmail === "error" ? gmail : null;
+
+  return <SettingsPageClient gmailStatus={gmailStatus} />;
 }

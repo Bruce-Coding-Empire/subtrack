@@ -14,7 +14,7 @@ import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { QuerySubscriptionsDto } from './dto/query-subscriptions.dto';
 
-type SubscriptionResponse = {
+export type SubscriptionResponse = {
   id: string;
   name: string;
   cost: number;
