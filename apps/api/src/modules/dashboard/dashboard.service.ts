@@ -139,7 +139,7 @@ export class DashboardService {
     };
   }
 
-  private async getCurrentMonthSpend(
+  async getCurrentMonthSpend(
     userId: string,
     baseCurrency: string,
   ): Promise<number> {

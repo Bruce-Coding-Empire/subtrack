@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import { NotificationPreference } from './entities/notification-preference.entity';
 import { UpdateNotificationPreferencesDto } from './dto/update-notification-preferences.dto';
 
@@ -53,6 +53,18 @@ export class NotificationsService {
     } catch {
       throw new InternalServerErrorException('Failed to register push token');
     }
+  }
+
+  async findRenewalReminderRecipients(): Promise<NotificationPreference[]> {
+    return this.preferenceRepo.find({
+      where: { renewalRemindersEnabled: true, pushToken: Not(IsNull()) },
+    });
+  }
+
+  async findSpendLimitAlertRecipients(): Promise<NotificationPreference[]> {
+    return this.preferenceRepo.find({
+      where: { spendLimitAlertsEnabled: true, pushToken: Not(IsNull()) },
+    });
   }
 
   private async getOrCreate(userId: string): Promise<NotificationPreference> {
