@@ -24,7 +24,8 @@
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
     "trigger:renewal": "ts-node -r tsconfig-paths/register src/scripts/trigger-renewal.ts",
-    "trigger:exchange-rate": "ts-node -r tsconfig-paths/register src/scripts/trigger-exchange-rate.ts"
+    "trigger:exchange-rate": "ts-node -r tsconfig-paths/register src/scripts/trigger-exchange-rate.ts",
+    "trigger:notification-dispatch": "ts-node -r tsconfig-paths/register src/scripts/trigger-notification-dispatch.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -39,6 +40,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "expo-server-sdk": "^6.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.22.0",
