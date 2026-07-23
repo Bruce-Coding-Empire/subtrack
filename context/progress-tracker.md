@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 7 — Spend Limits (v2)
-**Last completed:** 19 Spend Limits — Web UI (mock data)
-**Next:** 20 Spend Limits — Web Wiring
+**Phase:** Phase 8 — Landing Page (v2)
+**Last completed:** 20 Spend Limits — Web Wiring
+**Next:** 21 Landing Page — Web UI + Wiring
 
 ---
 
@@ -53,8 +53,15 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 18 Spend Limits API
 - [x] 19 Spend Limits — Web UI (mock data)
-- [ ] 20 Spend Limits — Web Wiring
-- [ ] 21 Spend Limits — Mobile (UI + Wiring)
+- [x] 20 Spend Limits — Web Wiring
+
+### Phase 8 — Landing Page (v2)
+
+- [ ] 21 Landing Page — Web UI + Wiring
+
+### Phase 9 — Spend Limits — Mobile (v2)
+
+- [ ] 22 Spend Limits — Mobile (UI + Wiring)
 
 ---
 
@@ -201,6 +208,8 @@ Update this file after every completed feature. Any AI agent reading this should
 - **19 Spend Limits — Web UI (mock data).** First use of a progress bar in this codebase — `npx shadcn add progress` resolved cleanly for the `base-vega` style (built on `@base-ui/react/progress`, same family as `Switch`). **Found and fixed a real bug in the generated `apps/web/components/ui/progress.tsx`:** its `Progress` root rendered `{children}` and then *unconditionally* appended its own default `<ProgressTrack><ProgressIndicator /></ProgressTrack>` regardless of whether custom children were passed — since overriding the indicator's color per-instance requires passing custom colored `ProgressTrack`/`ProgressIndicator` as children (no `indicatorClassName` prop exists), this would have silently rendered two overlapping tracks. Fixed as `{children ?? <ProgressTrack>...}` so custom children replace rather than append to the default. Same category of justified generated-file edit as `Input`/`Form` before it.
 - **19 Spend Limits — Web UI (mock data).** Verified in a real browser via Playwright against the live dev stack (API on port 8000, web on port 3000), not just `tsc`/`next build`. Logged in as the seeded test user (marker-cookie-only bypass wasn't enough here, since real profile/dashboard data — not just proxy redirect — was needed); screenshotted all three dashboard progress-bar states (under-limit accent, ≥90% warning, over-limit error with clamped bar + "over limit" text) and the no-limit CTA by temporarily editing `mock-spend-limit.ts` and reverting after each, plus the Settings spend-limit input's dirty/disabled Save-button states and its negative-value rejection.
 - **19 Spend Limits — Web UI (mock data) — follow-up fix, not scoped to this feature but found while verifying it.** `eslint`/`npm run lint` in `apps/web` was crashing with `Cannot find module 'next/dist/compiled/babel/eslint-parser'`, on `main` as well as this branch — root-caused and fixed. Same underlying mechanism as `scripts/link-expo-router.js` (feature 14): `apps/web` pins `react-dom@19.2.4` (required by `next`), which conflicts with the root-hoisted `react-dom@19.2.8` (required by `apps/mobile` via Expo — confirmed via `npm dedupe`, which refuses to hoist everything to one `react-dom` version and errors on exactly this peer conflict), so npm correctly keeps `next` nested under `apps/web/node_modules` rather than hoisting it to the root. `eslint-config-next`, however, has no `next`/react peer dependency of its own, so it hoists to the root `node_modules` uncontested — and its `dist/parser.js` does a plain Node `require("next/dist/compiled/babel/eslint-parser")`, which only walks *upward* through ancestor `node_modules` directories and can never reach sideways into `apps/web/node_modules`. Fixed with a new `scripts/link-next.js`, a second directory-junction postinstall script mirroring `link-expo-router.js` exactly (`node_modules/next` → `apps/web/node_modules/next`), wired into the root `package.json`'s `postinstall` alongside the existing one. Verified: deleted the junction, ran `npm install` from the root, confirmed `postinstall` recreated it automatically, then re-ran `npx tsc --noEmit` and `npm run lint` in `apps/web` — both clean, lint exits `0` with zero reported problems.
+- **20 Spend Limits — Web Wiring.** Backend needed zero changes — `GET /dashboard/summary` and `PATCH /users/me` were already fully contract-compliant from feature 18. Pure frontend wiring: `UpdateUserInput` gained `monthlySpendLimit?: number | null`, `DashboardSummary` gained `spendLimit`/`currentMonthSpend`/`percentageUsed`/`isOverLimit`. `SpendLimitSection` doesn't use `react-hook-form` (unlike `ProfileSection`) — it's plain `useState`, so the async save/error handling was hand-rolled (`isSaving`/`saveError` state) rather than reusing `form.formState`, calling the already-existing `updateCurrentUserProfile()` from `lib/users.ts` (no changes needed there — it already targeted `PATCH /users/me` correctly, just needed the widened input type). `DashboardPageClient` swapped its `mockSpendLimitSummary.*` props for the real `summary.*` fields; `lib/mock-spend-limit.ts` deleted (no other references) — same end-of-life pattern `mock-dashboard-data.ts` had at feature 12.
+- **20 Spend Limits — Web Wiring — verification.** The API dev server wasn't running at session start (only web's port 3000 was up) — starting a second `nest start --watch` collided with an already-running instance on port 8000 (`EADDRINUSE`, pid 1820, started earlier the same session) and crashed harmlessly; the pre-existing instance was already healthy (`GET /api/docs` → 200) and used for verification instead, no restart needed since this feature touched no API code. Verified end-to-end via Playwright against the live stack: real login (not the marker-cookie bypass, since actual `PATCH`/`GET` round-trips were needed), set the spend limit to 150 in Settings with zero save errors, confirmed the dashboard progress bar reflected the real value (`RWF 0 / RWF 150`, `0.0% used`, not the old mock `200`/`91.4`/`45.7`), then cleared it and confirmed the "Set a monthly limit" CTA rendered instead of a bar. Console showed the expected transient 401s from the documented lazy-refresh pattern (feature 04) on each `page.goto`, not a regression. Screenshots and the verification script were deleted after confirming, per this project's Playwright-cleanup convention.
 
 ---
 
