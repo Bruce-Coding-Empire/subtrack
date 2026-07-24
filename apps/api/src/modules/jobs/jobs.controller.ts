@@ -11,6 +11,7 @@ import { RenewalJob } from '@/modules/scheduler/renewal.job';
 import { NotificationDispatchJob } from '@/modules/scheduler/notification-dispatch.job';
 import { EmailScanJob } from '@/modules/scheduler/email-scan.job';
 import { ExchangeRateJob } from '@/modules/scheduler/exchange-rate.job';
+import { DemoSeedService } from './demo-seed.service';
 
 // External triggers for the scheduler jobs (feature 35): production hosting
 // sleeps the process, so a GitHub Actions workflow fires these daily — the
@@ -32,6 +33,7 @@ export class JobsController {
     private readonly notificationDispatchJob: NotificationDispatchJob,
     private readonly emailScanJob: EmailScanJob,
     private readonly exchangeRateJob: ExchangeRateJob,
+    private readonly demoSeedService: DemoSeedService,
   ) {}
 
   @Post('renewals/run')
@@ -71,6 +73,16 @@ export class JobsController {
   @ApiResponse({ status: 401, description: 'Missing or invalid job key' })
   async runExchangeRates() {
     const data = await this.exchangeRateJob.refreshRates();
+    return { success: true, data };
+  }
+
+  @Post('demo/reset')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Wipe and reseed the demo account's data" })
+  @ApiResponse({ status: 200, description: 'Demo account reset' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid job key' })
+  async resetDemo() {
+    const data = await this.demoSeedService.reset();
     return { success: true, data };
   }
 }
