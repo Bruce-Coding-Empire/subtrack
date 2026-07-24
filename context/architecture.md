@@ -38,38 +38,34 @@
 │   └── progress-tracker.md
 ├── apps/
 │   ├── web/                                 → Next.js app
+│   │   ├── proxy.ts                        → Next 16 middleware (optimistic auth redirects off the subtrack_session marker cookie, feature 04)
 │   │   ├── app/
 │   │   │   ├── layout.tsx
-│   │   │   ├── page.tsx                    → Landing
+│   │   │   ├── page.tsx                    → Landing (feature 21)
 │   │   │   ├── (auth)/
+│   │   │   │   ├── layout.tsx
 │   │   │   │   ├── login/page.tsx
 │   │   │   │   └── register/page.tsx
-│   │   │   ├── dashboard/page.tsx
-│   │   │   ├── subscriptions/
-│   │   │   │   ├── page.tsx
-│   │   │   │   └── [id]/page.tsx
-│   │   │   └── settings/page.tsx
+│   │   │   └── (app)/                      → authenticated chrome (Navbar) — route group, no URL segment (feature 13)
+│   │   │       ├── layout.tsx
+│   │   │       ├── dashboard/page.tsx
+│   │   │       ├── subscriptions/
+│   │   │       │   ├── page.tsx
+│   │   │       │   ├── [id]/page.tsx
+│   │   │       │   └── detected/page.tsx   → Gmail-detected review UI (features 29/30)
+│   │   │       └── settings/page.tsx
 │   │   ├── components/
 │   │   │   ├── ui/                         → shadcn/ui components only
 │   │   │   ├── layout/
-│   │   │   │   ├── Navbar.tsx
-│   │   │   │   └── Footer.tsx
-│   │   │   ├── dashboard/
-│   │   │   │   ├── StatsBar.tsx
-│   │   │   │   ├── CategoryBreakdown.tsx
-│   │   │   │   ├── SpendTrend.tsx
-│   │   │   │   └── UpcomingRenewals.tsx
-│   │   │   ├── subscriptions/
-│   │   │   │   ├── SubscriptionsTable.tsx
-│   │   │   │   ├── SubscriptionForm.tsx
-│   │   │   │   └── SubscriptionFilters.tsx
+│   │   │   │   └── Navbar.tsx
+│   │   │   ├── landing/                    → LandingHeader, HeroSection, DashboardPreview, ProblemStrip, FeatureHighlights, ClosingCtaBand
+│   │   │   ├── dashboard/                  → DashboardPageClient, DashboardStats, StatCard, CategoryBreakdownChart, SpendTrendChart, UpcomingRenewalsList, SpendLimitProgress, DashboardEmptyState
+│   │   │   ├── subscriptions/              → SubscriptionsPageClient, SubscriptionsTable, SubscriptionForm, SubscriptionFilters, add/edit/cancel/delete dialogs, detected-review components, ExportMenu, badges/pills
+│   │   │   ├── settings/                   → SettingsPageClient, ProfileSection, SpendLimitSection, NotificationsSection, GmailConnectionSection
 │   │   │   └── auth/
 │   │   │       ├── LoginForm.tsx
 │   │   │       └── RegisterForm.tsx
-│   │   ├── lib/
-│   │   │   ├── api-client.ts               → Typed fetch wrapper hitting the Nest API
-│   │   │   ├── auth.ts                     → Token storage + refresh logic
-│   │   │   └── utils.ts
+│   │   ├── lib/                            → api-client.ts (typed fetch wrapper) + auth.ts (token storage/refresh) + one thin wrapper per API domain (subscriptions, dashboard, users, notifications, integrations/detected-subscriptions, export) + format/constants/option helpers
 │   │   └── types/
 │   │       └── index.ts                    → Mirrors api-contract.md shapes
 │   │
@@ -132,38 +128,45 @@
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
 │   │           │   └── jwt-auth.guard.ts
-│   │           ├── interceptors/
-│   │           │   └── response.interceptor.ts
 │   │           ├── filters/
-│   │           │   └── http-exception.filter.ts
+│   │           │   └── http-exception.filter.ts   → also the response envelope's error half; success responses are shaped in controllers, no interceptor exists
 │   │           ├── decorators/
 │   │           │   └── current-user.decorator.ts
 │   │           └── utils/
 │   │               ├── billing-cycle.util.ts   → next_renewal_date calculation
+│   │               ├── renewal-catchup.util.ts → pure catch-up loop for renewal.job.ts (feature 34)
+│   │               ├── spend.util.ts           → monthly-equivalent cost normalization (dashboard)
 │   │               ├── email-parser.util.ts    → vendor/amount/currency/cycle heuristics for email-scan.job.ts
+│   │               ├── encryption.util.ts      → AES-256-GCM for stored Gmail OAuth tokens
 │   │               ├── csv.util.ts             → manual CSV serialization, feature 31
-│   │               └── pdf-table.util.ts       → shared PDFKit table renderer, feature 31
+│   │               ├── pdf-table.util.ts       → shared PDFKit table renderer, feature 31
+│   │               ├── cookie.util.ts          → manual refresh-cookie parser (no cookie-parser dep)
+│   │               ├── numeric.transformer.ts  → pg numeric string→number ValueTransformer
+│   │               └── snake-naming.strategy.ts → camelCase entity props ↔ snake_case columns
 │   │
 │   └── mobile/                              → Expo app
 │       ├── app/                            → Expo Router
 │       │   ├── (auth)/
+│       │   │   ├── welcome.tsx             → guest entry screen (initialRouteName), mobile's landing-page counterpart (feature 33)
 │       │   │   ├── login.tsx
 │       │   │   └── register.tsx
 │       │   ├── (tabs)/
 │       │   │   ├── dashboard.tsx
 │       │   │   ├── subscriptions.tsx
+│       │   │   ├── add.tsx                 → route slot for the raised center tab button only (redirect safety net, feature 15)
 │       │   │   ├── alerts.tsx
 │       │   │   └── settings.tsx
 │       │   └── subscription/
 │       │       ├── [id].tsx
-│       │       └── add.tsx
+│       │       └── add.tsx                 → create + edit (?id= switches mode)
 │       ├── components/
 │       │   ├── dashboard/
 │       │   ├── subscriptions/
+│       │   ├── settings/
 │       │   └── ui/
-│       └── lib/
-│           ├── api-client.ts               → Same contract as web, adapted for RN
-│           └── auth.ts                     → SecureStore-based token storage
+│       ├── constants/
+│       │   └── colors.ts                   → plain-value token mirror for native props that can't take a className
+│       └── lib/                            → api-client.ts (same contract as web, adapted for RN) + auth.ts / auth-context.tsx / token-store.ts (SecureStore session) + one thin wrapper per API domain + format/option helpers + types.ts (contract mirror)
 ```
 
 ---
@@ -335,7 +338,7 @@ Job completion logged (detected count, already-seen count, failed-connection cou
 | user_id           | uuid        | References users — denormalized for fast dashboard queries |
 | amount            | numeric     | Amount charged, original currency   |
 | currency          | text        |                                      |
-| paid_at           | date        | Date the renewal job logged this    |
+| paid_at           | date        | The renewal due date this row covers — backfilled rows are dated when the payment notionally happened, never the job's run date (feature 34) |
 | created_at        | timestamptz |                                      |
 
 Append-only. Never updated or deleted by user actions.
