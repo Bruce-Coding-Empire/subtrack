@@ -269,7 +269,7 @@ async function apiFetch<T>(
 | ------------------------ | -------------------- | --------------------------------- |
 | `NODE_ENV`                | apps/api             | `development` \| `production` — gates Swagger and the refresh-token cookie's `SameSite` value |
 | `DATABASE_URL`            | apps/api             | Postgres connection string        |
-| `DATABASE_SSL`            | apps/api             | `true` only when `DATABASE_URL` needs TLS (e.g. a public DB proxy used to run migrations from a laptop) — Railway's private-network URL doesn't need this |
+| `DATABASE_SSL`            | apps/api             | `true` whenever `DATABASE_URL` needs TLS — always `true` in production (Neon requires SSL) and when running a migration from a laptop against it; not needed for local Postgres |
 | `JWT_ACCESS_SECRET`       | apps/api             |                                    |
 | `JWT_REFRESH_SECRET`      | apps/api             |                                    |
 | `REFRESH_TOKEN_MAX_AGE_MS` | apps/api             | Refresh cookie lifetime in ms — must match the refresh JWT's `expiresIn` ("7d") in `auth.service.ts` |
@@ -289,8 +289,10 @@ Never hardcode a URL, secret, or key anywhere in the codebase. `NEXT_PUBLIC_` / 
 ## Hosting
 
 - `apps/web` → Vercel, project Root Directory set to `apps/web` (npm workspace auto-detected, no `vercel.json` needed)
-- `apps/api` + Postgres → Railway, one project with a Postgres plugin alongside the API service; the API service's build/start commands are defined in `apps/api/railway.json` (Root Directory stays at repo root so the workspace lockfile resolves)
-- No custom domain — both run on platform-default domains (`*.vercel.app` / `*.up.railway.app`), which are unrelated domains to each other. This is why the refresh-token cookie's `SameSite` is environment-aware (`none` in production, `lax` in dev) rather than a fixed value.
+- `apps/api` → Render (free web service — no credit card required; chosen over Railway specifically because it runs a normal long-running Node process, which this app's in-process `@Cron` jobs and persistent TypeORM pool need). Build/start commands defined in the repo-root `render.yaml` Blueprint, no `rootDir` set (keeps the npm workspace lockfile visible to `npm ci`)
+- Postgres → Neon (free, no credit card, no expiry — chosen over Render's own free Postgres, which expires after 30–90 days). Always connects over TLS: `DATABASE_SSL=true` in production
+- No custom domain — Vercel and Render both run on platform-default domains (`*.vercel.app` / `*.onrender.com`), which are unrelated domains to each other. This is why the refresh-token cookie's `SameSite` is environment-aware (`none` in production, `lax` in dev) rather than a fixed value
+- Render's free plan sleeps the service after 15 minutes idle (30–60s cold start on the next request); a sleeping instance won't fire an in-process `@Cron` job that lands while it's asleep — acceptable for this project, revisit with an uptime pinger or a paid plan if reliable scheduled jobs become necessary
 - Migrations are never run automatically on deploy — run `npm run migration:run` manually from a local machine against the production `DATABASE_URL` after any deploy that changes the schema. Never run `npm run seed` against production.
 
 ---
