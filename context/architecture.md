@@ -58,7 +58,7 @@
 │   │   │   ├── ui/                         → shadcn/ui components only
 │   │   │   ├── layout/
 │   │   │   │   └── Navbar.tsx
-│   │   │   ├── landing/                    → LandingHeader, HeroSection, DashboardPreview, ProblemStrip, FeatureHighlights, ClosingCtaBand
+│   │   │   ├── landing/                    → LandingHeader, HeroSection, DashboardPreview, ProblemStrip, FeatureHighlights, ClosingCtaBand, TryDemoButton (feature 36)
 │   │   │   ├── dashboard/                  → DashboardPageClient, DashboardStats, StatCard, CategoryBreakdownChart, SpendTrendChart, UpcomingRenewalsList, SpendLimitProgress, DashboardEmptyState
 │   │   │   ├── subscriptions/              → SubscriptionsPageClient, SubscriptionsTable, SubscriptionForm, SubscriptionFilters, add/edit/cancel/delete dialogs, detected-review components, ExportMenu, badges/pills
 │   │   │   ├── settings/                   → SettingsPageClient, ProfileSection, SpendLimitSection, NotificationsSection, GmailConnectionSection
@@ -125,9 +125,10 @@
 │   │       │   │   ├── export.controller.ts   → GET /export/subscriptions, GET /export/payment-history
 │   │       │   │   ├── export.service.ts
 │   │       │   │   └── dto/export-query.dto.ts
-│   │       │   └── jobs/                   → feature 35, external job triggers (no service — controller calls scheduler/ job classes directly)
+│   │       │   └── jobs/                   → feature 35/36, external job triggers
 │   │       │       ├── jobs.module.ts
-│   │       │       └── jobs.controller.ts     → POST /jobs/{renewals,notifications,email-scan,exchange-rates}/run, guarded by JobTriggerGuard
+│   │       │       ├── jobs.controller.ts     → POST /jobs/{renewals,notifications,email-scan,exchange-rates}/run + /jobs/demo/reset, guarded by JobTriggerGuard
+│   │       │       └── demo-seed.service.ts   → wipe-and-reseed of the demo user's data, run-time-relative dates (feature 36); also behind npm run seed:demo via scripts/seed-demo.ts
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
 │   │           │   ├── jwt-auth.guard.ts

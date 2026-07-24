@@ -23,6 +23,7 @@
     "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
+    "seed:demo": "ts-node -r tsconfig-paths/register src/scripts/seed-demo.ts",
     "trigger:renewal": "ts-node -r tsconfig-paths/register src/scripts/trigger-renewal.ts",
     "trigger:exchange-rate": "ts-node -r tsconfig-paths/register src/scripts/trigger-exchange-rate.ts",
     "trigger:notification-dispatch": "ts-node -r tsconfig-paths/register src/scripts/trigger-notification-dispatch.ts",
