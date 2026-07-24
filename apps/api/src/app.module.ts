@@ -12,6 +12,7 @@ import { SchedulerModule } from '@/modules/scheduler/scheduler.module';
 import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { IntegrationsModule } from '@/modules/integrations/integrations.module';
+import { ExportModule } from '@/modules/export/export.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { IntegrationsModule } from '@/modules/integrations/integrations.module';
     DashboardModule,
     NotificationsModule,
     IntegrationsModule,
+    ExportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
