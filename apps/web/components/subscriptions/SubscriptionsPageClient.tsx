@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { AddSubscriptionDialog } from "@/components/subscriptions/AddSubscriptionDialog";
 import { DetectedSubscriptionsBanner } from "@/components/subscriptions/DetectedSubscriptionsBanner";
+import { ExportMenu } from "@/components/subscriptions/ExportMenu";
 import { SubscriptionFilters } from "@/components/subscriptions/SubscriptionFilters";
 import { SubscriptionsPagination } from "@/components/subscriptions/SubscriptionsPagination";
 import { SubscriptionsTable } from "@/components/subscriptions/SubscriptionsTable";
@@ -101,7 +102,10 @@ export function SubscriptionsPageClient() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-base font-semibold text-text-primary">Subscriptions</h1>
-        <AddSubscriptionDialog onCreated={handleCreated} />
+        <div className="flex items-center gap-3">
+          <ExportMenu />
+          <AddSubscriptionDialog onCreated={handleCreated} />
+        </div>
       </div>
 
       <DetectedSubscriptionsBanner count={pendingDetectedCount} />
