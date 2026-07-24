@@ -309,6 +309,24 @@ Response: `{ "success": true }`
 
 ---
 
+## Export
+
+Both endpoints stream a raw file download — responses do **not** follow the `{ success, data }` envelope used everywhere else in this contract. `Content-Type` is `text/csv` or `application/pdf`, with `Content-Disposition: attachment; filename="..."` set accordingly. Errors (e.g. invalid `format`) still return the standard `{ success: false, error }` JSON shape with the matching status code.
+
+### `GET /export/subscriptions`
+
+Authenticated. Query params: `format` (`csv` | `pdf`, required).
+
+Exports the current user's subscriptions — columns: Name, Category, Cost, Currency, Billing Cycle (rendered as `custom (N days)` when applicable), Status, Start Date, Next Renewal Date. Filename: `subscriptions-export-{YYYY-MM-DD}.csv|pdf`.
+
+### `GET /export/payment-history`
+
+Authenticated. Query params: `format` (`csv` | `pdf`, required).
+
+Exports the current user's payment history across all subscriptions — columns: Subscription Name, Amount, Currency, Paid At. Ordered newest-paid first. Filename: `payment-history-export-{YYYY-MM-DD}.csv|pdf`.
+
+---
+
 ## Error Responses
 
 All errors follow:
