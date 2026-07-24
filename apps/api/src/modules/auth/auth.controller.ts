@@ -92,17 +92,28 @@ export class AuthController {
   @ApiOperation({ summary: 'Log out the current user' })
   @ApiResponse({ status: 200, description: 'Logged out' })
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+    res.clearCookie(REFRESH_TOKEN_COOKIE, this.getRefreshTokenCookieOptions());
     return { success: true };
   }
 
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {
     res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      path: '/',
+      ...this.getRefreshTokenCookieOptions(),
       maxAge: this.refreshTokenMaxAgeMs,
     });
+  }
+
+  private getRefreshTokenCookieOptions(): {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'none' | 'lax';
+    path: string;
+  } {
+    return {
+      httpOnly: true,
+      secure: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+    };
   }
 }

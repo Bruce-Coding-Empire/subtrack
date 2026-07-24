@@ -23,6 +23,10 @@ import { ExportModule } from '@/modules/export/export.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
+        ssl:
+          config.get<string>('DATABASE_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
         namingStrategy: new SnakeNamingStrategy(),
         entities,
         synchronize: false,
