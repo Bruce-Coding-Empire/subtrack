@@ -3,6 +3,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DashboardPreview } from "@/components/landing/DashboardPreview";
+import { TryDemoButton } from "@/components/landing/TryDemoButton";
 
 export function HeroSection() {
   return (
@@ -24,6 +25,7 @@ export function HeroSection() {
         >
           Get Started
         </Link>
+        <TryDemoButton />
         <Link href="/login" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
           Log in
         </Link>
