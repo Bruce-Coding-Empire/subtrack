@@ -267,7 +267,9 @@ async function apiFetch<T>(
 
 | Variable                | Used In            | Notes                          |
 | ------------------------ | -------------------- | --------------------------------- |
+| `NODE_ENV`                | apps/api             | `development` \| `production` — gates Swagger and the refresh-token cookie's `SameSite` value |
 | `DATABASE_URL`            | apps/api             | Postgres connection string        |
+| `DATABASE_SSL`            | apps/api             | `true` only when `DATABASE_URL` needs TLS (e.g. a public DB proxy used to run migrations from a laptop) — Railway's private-network URL doesn't need this |
 | `JWT_ACCESS_SECRET`       | apps/api             |                                    |
 | `JWT_REFRESH_SECRET`      | apps/api             |                                    |
 | `REFRESH_TOKEN_MAX_AGE_MS` | apps/api             | Refresh cookie lifetime in ms — must match the refresh JWT's `expiresIn` ("7d") in `auth.service.ts` |
@@ -281,6 +283,15 @@ async function apiFetch<T>(
 | `EXPO_PUBLIC_API_URL`     | apps/mobile           | Exposed to app bundle — API base URL |
 
 Never hardcode a URL, secret, or key anywhere in the codebase. `NEXT_PUBLIC_` / `EXPO_PUBLIC_` prefixes mean the value ships to the client — never put a secret behind those prefixes.
+
+---
+
+## Hosting
+
+- `apps/web` → Vercel, project Root Directory set to `apps/web` (npm workspace auto-detected, no `vercel.json` needed)
+- `apps/api` + Postgres → Railway, one project with a Postgres plugin alongside the API service; the API service's build/start commands are defined in `apps/api/railway.json` (Root Directory stays at repo root so the workspace lockfile resolves)
+- No custom domain — both run on platform-default domains (`*.vercel.app` / `*.up.railway.app`), which are unrelated domains to each other. This is why the refresh-token cookie's `SameSite` is environment-aware (`none` in production, `lax` in dev) rather than a fixed value.
+- Migrations are never run automatically on deploy — run `npm run migration:run` manually from a local machine against the production `DATABASE_URL` after any deploy that changes the schema. Never run `npm run seed` against production.
 
 ---
 
