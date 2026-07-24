@@ -12,6 +12,13 @@ import { NotificationPreference } from '@/modules/notifications/entities/notific
 
 const REMINDER_WINDOW_DAYS = 3;
 
+export type NotificationDispatchJobSummary = {
+  remindersQueued: number;
+  alertsQueued: number;
+  sent: number;
+  failures: number;
+};
+
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -37,7 +44,7 @@ export class NotificationDispatchJob {
   ) {}
 
   @Cron('15 0 * * *') // daily at 00:15 server time, after renewal.job.ts's 00:05 run
-  async dispatch(): Promise<void> {
+  async dispatch(): Promise<NotificationDispatchJobSummary> {
     this.logger.log('Notification dispatch job started');
 
     const messages: ExpoPushMessage[] = [];
@@ -90,6 +97,8 @@ export class NotificationDispatchJob {
     this.logger.log(
       `Notification dispatch job completed — ${remindersQueued} renewal reminders and ${alertsQueued} spend-limit alerts queued, ${sent} pushes sent, ${failed} failures`,
     );
+
+    return { remindersQueued, alertsQueued, sent, failures: failed };
   }
 
   private async findUpcomingRenewals(userId: string): Promise<Subscription[]> {

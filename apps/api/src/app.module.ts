@@ -13,6 +13,7 @@ import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { IntegrationsModule } from '@/modules/integrations/integrations.module';
 import { ExportModule } from '@/modules/export/export.module';
+import { JobsModule } from '@/modules/jobs/jobs.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { ExportModule } from '@/modules/export/export.module';
     NotificationsModule,
     IntegrationsModule,
     ExportModule,
+    JobsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
