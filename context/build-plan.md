@@ -219,7 +219,7 @@ For each app: UI built with mock data first, verified visually, then wired to th
 
 ## v2 Roadmap
 
-v1 (above) is complete and shipped. Nothing below is started or committed — these are full specs so a future session can pick one up and start building directly, the same level of detail as Phases 1–6, continuing the numbering from 18. Build order across phases matters: Phase 10 (push notifications) depends on Phase 7's spend-limit fields for its spend-limit-alert half; Phase 11 and 12 are independent of everything else and of each other. Phase 8 (landing page) is fully static and independent of every other v2 phase; Phase 9 (mobile spend limits) depends only on Phase 7's API (18), not on Phase 8.
+v1 (above) is complete and shipped. Nothing below is started or committed — these are full specs so a future session can pick one up and start building directly, the same level of detail as Phases 1–6, continuing the numbering from 18. Build order across phases matters: Phase 10 (push notifications) depends on Phase 7's spend-limit fields for its spend-limit-alert half; Phase 11 and 12 are independent of everything else and of each other. Phase 8 (landing page) is fully static and independent of every other v2 phase; Phase 9 (mobile spend limits) depends only on Phase 7's API (18), not on Phase 8. Phase 13 (mobile branding + welcome screen) is likewise fully static and independent of every other v2 phase — mobile's counterpart to Phase 8, not a dependency of anything.
 
 ---
 
@@ -405,6 +405,32 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 
 ---
 
+## Phase 13 — Mobile Branding & Welcome Screen (v2)
+
+`app.json` still ships the stock Expo icon/splash assets (`icon.png`, `splash-icon.png`, the Android adaptive-icon set, and an `ios.icon` pointing at Expo's own sample Icon Composer glass icon under `assets/expo.icon/`) even though the real logo, `assets/images/subtrack.png`, has been live inline on the login/register screens since feature 14. And unlike web — which has a landing page in front of `/login` (Phase 8) — mobile's root layout (`app/_layout.tsx`) branches straight from the native splash into `(auth)` → `login` with nothing in between. This phase closes both gaps: real branding on every icon/splash surface, and a mobile counterpart to the web landing page. Content below is locked (mirrors the Phase 8 decision to spec content upfront) — build to this spec using `ui-tokens.md`/`ui-rules.md` and the existing component set (`Button`, `Image` from `expo-image`) rather than introducing new ones without sign-off.
+
+### 33 Mobile App Icon, Splash Screen & Welcome Screen
+
+**Branding — App Icon & Splash Screen (Logic):**
+
+- `assets/images/icon.png` (1024×1024, used for Android and as the iOS fallback) — regenerated from `subtrack.png`, flattened onto an opaque background (iOS icons can't have transparency). Use the same background the logo already uses per `ui-tokens.md`'s Logo component spec (`linear-gradient(135deg, #0F9D78 0%, #0B7A5C 100%)`) if contrast against the mark holds up at icon size, otherwise fall back to a flat white/`#F6F8F7` backing — decide by eye during implementation, not assumed here
+- `assets/images/android-icon-foreground.png` — replaced with `subtrack.png` at the correct safe-area scale for Android's adaptive-icon mask (transparency is fine here, this is a foreground layer over `android.adaptiveIcon.backgroundColor`)
+- `android.adaptiveIcon.backgroundColor` in `app.json` — changed from the current default Expo blue (`#E6F4FE`) to `#F6F8F7` (`--color-background` token) for brand consistency
+- `assets/images/android-icon-monochrome.png` — regenerated as a single-color alpha mask derived from `subtrack.png`'s silhouette, for Android 13+ themed icons
+- `ios.icon` in `app.json` — drop the `./assets/expo.icon` Icon Composer override (Expo's own sample glass icon, unrelated to this project) so iOS falls back to the top-level `icon` field; a proper Icon Composer (liquid-glass) version of `subtrack.png` is a nice-to-have follow-up, not required here
+- `assets/images/splash-icon.png` — replaced with `subtrack.png`; `expo-splash-screen`'s existing plugin config (`backgroundColor: "#F6F8F7"`, already matching `--color-background`) stays as-is, only `imageWidth` is re-tuned if the new mark's proportions need it
+- Rebuild the dev client (`expo prebuild` / a new EAS dev build) after these change — icon/splash assets are baked into the native binary and won't show via a plain Metro reload
+
+**Welcome Screen (UI + Logic):**
+
+- New `app/(auth)/welcome.tsx`, becomes the `(auth)` group's `initialRouteName` (currently `login`) in `app/(auth)/_layout.tsx`, with `login` and `register` added as further `Stack.Screen`s reachable from it — so an unauthenticated user always lands here first, same as web guests always landing on `/` before `/login`
+- Content — logo (`subtrack.png`, larger than the 36×36 inline usage on login/register) + "SubTrack" logo text per `ui-tokens.md`'s Logo Text row (19px/700), headline echoing the web hero's problem-first framing ("Your subscriptions are quietly draining you.") but condensed for a single non-scrolling mobile screen, 3 compact icon+text rows (not full `Card`s — mobile pattern, per `ui-rules.md`, keeps this to short rows, not the web's 3-card layout) covering the same three points as web's feature highlights (track everything, never miss a renewal, see where your money goes)
+- Two CTAs pinned near the bottom: `Get Started` (Primary button) → `/register`, `Log In` (text link, same treatment as the existing "Don't have an account? Register" link pattern on the login screen) → `/login`
+- Fully static — no data fetching, no API wiring
+- No dashboard-preview mock (unlike the web hero) — mobile screen space doesn't fit it meaningfully at this size; skip rather than force a cramped chart
+
+---
+
 ## v2 Feature Count
 
 | Phase                              | Features |
@@ -415,7 +441,8 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 | Phase 10 — Push Notifications                | 4          |
 | Phase 11 — Email Auto-Detection                 | 4          |
 | Phase 12 — Data Export                            | 2          |
-| **Total**                                                  | **15**     |
+| Phase 13 — Mobile Branding & Welcome Screen         | 1          |
+| **Total**                                                  | **16**     |
 
 ---
 
