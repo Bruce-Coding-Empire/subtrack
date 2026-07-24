@@ -451,3 +451,65 @@ Gmail OAuth (read-only), decided when this was specced — bank auto-detection i
 - **Multi-currency base (per-portfolio)** — considered, then dropped. No clear use case was identified, and "portfolio" wasn't a concept defined anywhere else in this project's docs.
 - **Bank auto-detection of subscriptions** — excluded outright, not deferred. See Phase 11's Gmail-only approach above; brokering or storing bank credentials/access tokens carries security and liability weight disproportionate to this project.
 - **Mobile tab bar true centering** — no longer a standalone concern; resolved as a side effect of feature 25's new 5th "Alerts" tab.
+
+---
+
+## Phase 14 — Production Reliability & Reviewer Readiness (post-launch hardening)
+
+**Why this phase exists.** Deploying to Render's free tier surfaced a correctness gap that was previously logged in `code-standards.md`'s Hosting section as an accepted tradeoff: Render sleeps the service after 15 minutes idle, and a sleeping process fires no in-process `@Cron` jobs. That tradeoff was acceptable while the app was private; it is not acceptable for a public portfolio deployment, because the renewal job is what produces `payment_history` — the data behind the spend-trend chart and current-month spend. If the job silently stops firing, a reviewer visiting weeks after launch sees overdue renewals (`error`-token pills everywhere) and a flat/stale trend chart — the system *looks* broken precisely because its most interesting feature (automated, append-only payment tracking) stopped running. This phase makes scheduled work correct regardless of host uptime, then makes the deployment reviewable: a hiring manager gives a portfolio link roughly 90 seconds and will not register an account, so without a seeded demo and visible docs, everything past the landing page is invisible.
+
+**Design principle for the whole phase: correctness must not depend on the scheduler.** The fix is layered — (1) make the renewal job *catch-up-safe* so it produces correct results no matter how irregularly it runs, (2) add an external trigger so it actually runs daily even when the host sleeps, (3) keep the in-process `@Cron` as a harmless redundant layer (idempotency from layer 1 makes double-firing safe). Layer 1 is the important one: layers 2–3 reduce *when* the job runs late, layer 1 guarantees the data is right *even when it does*.
+
+All four scheduled jobs are affected by sleep, but only renewals needs catch-up logic: notification reminders are forward-looking (a missed day is a missed reminder — acceptable, nothing to backfill), the email scan's `newer_than:2d` Gmail window already covers a one-day gap once daily triggering is reliable, and FX conversion reads "latest cached rate," so a day-old rate degrades gracefully rather than corrupting anything. Renewals is the only job where a missed run leaves *permanently wrong state* (an overdue `next_renewal_date` and missing history rows) rather than a transient gap — which is why it alone gets feature 34.
+
+### 34 Renewal Job — Catch-Up Correctness (API)
+
+**Logic:**
+
+- Replace the single-advance body of `renewal.job.ts` with a per-subscription catch-up loop: `while (nextRenewalDate <= today)` → write one `payment_history` row for that due date, advance `nextRenewalDate` by one billing cycle via the existing `billing-cycle.util.ts`, repeat. A weekly subscription that went unprocessed for three weeks produces three history rows and lands on a future renewal date in one run — under the current single-advance logic it would advance once, remain overdue, and permanently lose two history rows.
+- **`paidAt` = the due date being processed, not `today()`.** This is a deliberate semantic change from the current pattern. Backfilled payments must be dated when they notionally happened, or the spend-trend chart attributes several cycles of spend to the month the job happened to catch up in — historically wrong data presented as history. Same-day runs are unaffected (`due date == today`).
+- Defensive iteration cap (e.g. 120 per subscription, logged as an error if hit) — DTO validation already forbids `customIntervalDays < 1`, but an unbounded `while` over persisted data deserves defense in depth per this codebase's failure-tolerance rules; 120 covers a weekly subscription unprocessed for over two years.
+- **Idempotency falls out for free** and is required by feature 35: after catch-up, `nextRenewalDate > today`, so a second run the same day (in-process cron *and* external trigger both firing) finds nothing due and writes nothing. No dedupe table, no run-lock needed.
+- Unit tests on the catch-up logic (multiple cycles overdue across weekly/monthly/yearly/custom, exactly-today, iteration cap, `paidAt` dating) — extract the loop into a pure util if that keeps the tests dependency-free, matching `email-parser.util.ts`'s precedent.
+- Contract note: no `api-contract.md` change — `payment_history` shapes are unchanged, only when rows get created and how they're dated.
+
+### 35 External Job Triggers + Health Endpoint (API + GitHub Actions)
+
+**Logic:**
+
+- `GET /health` — public, unauthenticated, returns `{ success: true, data: { status: "ok" } }`. Exists for three consumers: Render's `healthCheckPath` (update `render.yaml` from `/` to `/health`), the uptime pinger (manual step below), and the GitHub Actions workflow's wake-up call. Deliberately does not touch the DB — it answers "is the process up," not "is every dependency healthy," so the pinger doesn't hammer Postgres every few minutes.
+- `POST /jobs/renewals/run`, `POST /jobs/notifications/run`, `POST /jobs/email-scan/run`, `POST /jobs/exchange-rates/run` — each executes the corresponding existing job method and returns its summary counts (e.g. `{ processed, paymentsLogged, failures }` for renewals). One endpoint per job, not one mega-endpoint: each stays independently re-runnable when debugging, matching the one-module-per-domain structure.
+- **Auth: a dedicated `JobTriggerGuard` checking an `x-job-key` header against `JOB_TRIGGER_SECRET` (new env var), compared with `crypto.timingSafeEqual`, not JWT.** These endpoints have no user context — jobs iterate across all users deliberately, the one sanctioned exception to per-user scoping already documented in `code-standards.md`. Reusing `JwtAuthGuard` would grant any logged-in user the power to fire global jobs; a machine secret is the correct shape. Timing-safe comparison because this is a bare secret check exposed on the public internet.
+- New `.github/workflows/scheduled-jobs.yml` — a `schedule:` workflow (daily, UTC; pick an hour, minute ≠ 0 since GitHub delays on-the-hour crons most) that calls the four endpoints **sequentially, in dependency order: renewals → notifications → email-scan → exchange-rates**. Sequencing in one workflow replaces the fragile cron-offset ordering (00:05/00:15/01:00) that only worked when the process stayed awake across the whole window — the notification job reads state the renewal job produces, so order is a real dependency, not a convention. The HTTP request itself wakes a sleeping Render instance (cold start eats ~30–60s of the request; set a generous `curl --max-time`).
+- **Keep the in-process `@Cron` decorators.** Two independent schedulers double-firing is safe (feature 34's idempotency) and each covers the other's failure mode: GitHub's scheduler is best-effort (documented delays under load, and scheduled workflows are auto-disabled after 60 days without repo activity), while the in-process cron dies with the host's sleep. Belt and braces, and the *reason* it's safe is exactly the correctness property feature 34 establishes — worth stating in the README later because it's a good interview answer.
+- Manual step (account-linked, per this project's precedent that account actions are never automated): create a free uptime monitor (e.g. UptimeRobot) pinging `GET /health` every ~10 minutes. This is cold-start UX for human reviewers, not correctness — layers 1–2 already guarantee correct data without it. Render's free tier includes 750 instance-hours/month; one always-on service fits.
+
+### 36 Demo Account — Seeded, Resettable (API + Web)
+
+**Why.** Reviewers will not register, and the dashboard's empty state — correct product design for real users — hides every feature from the one audience this deployment exists for. A demo account has to (a) look lived-in: mixed currencies, several months of `payment_history` so the trend chart has a real shape, a spend limit partially consumed, a couple of `pending` `detected_subscriptions` rows so the Gmail-review UI is visible without a real Gmail connection, and (b) survive visitors mutating it.
+
+**Logic:**
+
+- New `npm run seed:demo` (idempotent; creates-or-resets only the demo user, identified by `DEMO_USER_EMAIL`): deletes the demo user's subscriptions, payment history, detected subscriptions, and notification preferences, then reseeds. All dates are **relative to run time** ("paid 3 days ago", "renews in 5 days") so the dashboard always looks current instead of decaying as the seed ages. Amends the standing rule: `npm run seed` (dev fixtures) remains forbidden against production; `seed:demo` is the sanctioned, narrowly-scoped exception — it touches exactly one user's rows and nothing else.
+- `POST /jobs/demo/reset` — same `JobTriggerGuard` as feature 35, runs the same reset-and-reseed path. Added to the GitHub Actions workflow (nightly, after the other jobs). **Why reset instead of making the demo user read-only:** a read-only demo defeats its purpose — reviewers should experience add/edit/cancel flows — and a write-blocked demo user would scatter special-case branches through service code that currently has none. A nightly reset keeps the API entirely demo-unaware outside the seed path.
+- Web: a "Try the demo" Secondary button in the landing hero next to the existing CTAs, which calls the normal `POST /auth/login` with `NEXT_PUBLIC_DEMO_EMAIL` / `NEXT_PUBLIC_DEMO_PASSWORD` and redirects to `/dashboard` on success. **These two values are deliberately non-secret** — the `NEXT_PUBLIC_` rule in `code-standards.md` forbids *secrets* behind that prefix; demo credentials guard nothing and are meant to be public. No special demo-login endpoint: the normal auth path exercising the demo is itself part of the demo.
+- Mobile: out of scope — the demo exists for link-clicking reviewers, who are on the web.
+
+### 37 Repo & Reviewer Documentation
+
+**Logic:**
+
+- Root `README.md` written for a reviewer with 90 seconds: what SubTrack is and the live URL + demo button in the first screen of text, an architecture overview (three apps, one API, one contract), stack table, **screenshots of web *and* mobile** (reviewers cannot casually run an Expo app — screenshots or a short screen recording are the only way mobile exists for them; capture from the dev build once feature 33's branding lands so the stock Expo icon isn't in the frame), local run instructions, and a pointer to the `context/` docs as the how-it-was-built story (the AI-governance workflow is itself portfolio material).
+- **Expose Swagger in production** at its existing path (currently gated off by `NODE_ENV`) and link it from the README. Rationale: the API contract is not a secret — every endpoint shape is already public in this repo — and browsable live API docs are a differentiator almost no portfolio project has; auth still guards all data. This flips a deliberate earlier decision, so record it in `code-standards.md` when done.
+- Fix `progress-tracker.md` drift as part of this feature's session: it currently reads "32/32, Next: None" while feature 33 exists in this plan untracked (this phase's own entries are being added in the same update).
+- Not in scope, noted for later: the deployment-lessons writeup ("running a correct daily job on hosting that sleeps") belongs on the portfolio/blog, not in this repo's README.
+
+---
+
+## Phase 14 Feature Count
+
+| Phase | Features |
+| --- | --- |
+| Phase 14 — Production Reliability & Reviewer Readiness | 4 (34–37) |
+
+Ordering within the phase is strict: 34 before 35 (external triggering without catch-up would still double-fire the old non-idempotent logic), 35 before 36 (demo reset reuses the trigger guard and workflow), 37 last (README screenshots want the finished state).
