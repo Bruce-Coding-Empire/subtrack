@@ -120,14 +120,18 @@
 │   │       │   │   ├── dto/
 │   │       │   │   ├── entities/email-connection.entity.ts
 │   │       │   │   └── entities/detected-subscription.entity.ts
-│   │       │   └── export/                 → feature 31, file-download exports (no entities — reads subscriptions/payment_history)
-│   │       │       ├── export.module.ts
-│   │       │       ├── export.controller.ts   → GET /export/subscriptions, GET /export/payment-history
-│   │       │       ├── export.service.ts
-│   │       │       └── dto/export-query.dto.ts
+│   │       │   ├── export/                 → feature 31, file-download exports (no entities — reads subscriptions/payment_history)
+│   │       │   │   ├── export.module.ts
+│   │       │   │   ├── export.controller.ts   → GET /export/subscriptions, GET /export/payment-history
+│   │       │   │   ├── export.service.ts
+│   │       │   │   └── dto/export-query.dto.ts
+│   │       │   └── jobs/                   → feature 35, external job triggers (no service — controller calls scheduler/ job classes directly)
+│   │       │       ├── jobs.module.ts
+│   │       │       └── jobs.controller.ts     → POST /jobs/{renewals,notifications,email-scan,exchange-rates}/run, guarded by JobTriggerGuard
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
-│   │           │   └── jwt-auth.guard.ts
+│   │           │   ├── jwt-auth.guard.ts
+│   │           │   └── job-trigger.guard.ts   → x-job-key vs JOB_TRIGGER_SECRET, timing-safe (feature 35)
 │   │           ├── filters/
 │   │           │   └── http-exception.filter.ts   → also the response envelope's error half; success responses are shaped in controllers, no interceptor exists
 │   │           ├── decorators/

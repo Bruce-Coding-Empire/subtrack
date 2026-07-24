@@ -7,6 +7,13 @@ import { EmailConnection } from '@/modules/integrations/entities/email-connectio
 import { DetectedSubscription } from '@/modules/integrations/entities/detected-subscription.entity';
 import { parseSubscriptionDetails } from '@/common/utils/email-parser.util';
 
+export type EmailScanJobSummary = {
+  detected: number;
+  skipped: number;
+  failedConnections: number;
+  connections: number;
+};
+
 @Injectable()
 export class EmailScanJob {
   private readonly logger = new Logger(EmailScanJob.name);
@@ -20,7 +27,7 @@ export class EmailScanJob {
   ) {}
 
   @Cron('0 1 * * *') // daily at 01:00 server time — independent of renewal.job.ts/notification-dispatch.job.ts, just spaced out to avoid overlap
-  async scan(): Promise<void> {
+  async scan(): Promise<EmailScanJobSummary> {
     this.logger.log('Email scan job started');
 
     const connections = await this.connectionRepo.find({
@@ -78,5 +85,12 @@ export class EmailScanJob {
     this.logger.log(
       `Email scan job completed — ${detected} new detected subscriptions, ${skipped} already seen, ${failedConnections}/${connections.length} connections failed`,
     );
+
+    return {
+      detected,
+      skipped,
+      failedConnections,
+      connections: connections.length,
+    };
   }
 }

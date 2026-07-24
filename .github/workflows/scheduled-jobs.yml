@@ -1,0 +1,56 @@
+# Feature 35: production hosting (Render free tier) sleeps after 15 minutes
+# idle, and a sleeping process fires no in-process @Cron jobs. This workflow is
+# the external scheduler: the first request wakes the instance, then the four
+# job triggers run sequentially in dependency order — renewals → notifications
+# → email-scan → exchange-rates (the notification job reads state the renewal
+# job produces). Double-firing against the in-process crons is safe because the
+# jobs are idempotent (feature 34).
+#
+# Requires two repository settings (Settings → Secrets and variables → Actions):
+#   - variable API_BASE_URL  — the deployed API origin, no trailing slash
+#   - secret   JOB_TRIGGER_SECRET — must match the Render env var of the same name
+name: Scheduled Jobs
+
+on:
+  schedule:
+    # 03:23 UTC daily — minute deliberately off :00, GitHub delays on-the-hour
+    # crons the most. GitHub's scheduler is best-effort and auto-disables after
+    # 60 days without repo activity; the in-process crons cover that gap.
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-scheduled-jobs:
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      JOB_TRIGGER_SECRET: ${{ secrets.JOB_TRIGGER_SECRET }}
+    steps:
+      - name: Wake the API (cold start can take ~60s)
+        run: |
+          curl -sS --fail --retry 3 --retry-delay 20 --retry-all-errors \
+            --max-time 120 "$API_BASE_URL/health"
+
+      - name: Run renewal job
+        run: |
+          curl -sS --fail-with-body --max-time 300 -X POST \
+            -H "x-job-key: $JOB_TRIGGER_SECRET" \
+            "$API_BASE_URL/jobs/renewals/run"
+
+      - name: Run notification dispatch job
+        run: |
+          curl -sS --fail-with-body --max-time 300 -X POST \
+            -H "x-job-key: $JOB_TRIGGER_SECRET" \
+            "$API_BASE_URL/jobs/notifications/run"
+
+      - name: Run email scan job
+        run: |
+          curl -sS --fail-with-body --max-time 300 -X POST \
+            -H "x-job-key: $JOB_TRIGGER_SECRET" \
+            "$API_BASE_URL/jobs/email-scan/run"
+
+      - name: Run exchange rate job
+        run: |
+          curl -sS --fail-with-body --max-time 300 -X POST \
+            -H "x-job-key: $JOB_TRIGGER_SECRET" \
+            "$API_BASE_URL/jobs/exchange-rates/run"
