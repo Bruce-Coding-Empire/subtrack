@@ -327,6 +327,34 @@ Exports the current user's payment history across all subscriptions — columns:
 
 ---
 
+## Health & Job Triggers (feature 35/36)
+
+These endpoints exist because production hosting (Render free tier) sleeps the API process after 15 minutes idle, and a sleeping process fires no in-process `@nestjs/schedule` crons. A GitHub Actions scheduled workflow calls the job triggers daily — the HTTP request itself wakes the instance. See `build-plan.md` Phase 14 for the full design rationale.
+
+### `GET /health`
+
+Not authenticated. Deliberately does not touch the database — answers "is the process up" for Render's health check, the uptime pinger, and the Actions workflow's wake-up call, without hammering Postgres every few minutes.
+Response:
+```json
+{ "success": true, "data": { "status": "ok" } }
+```
+
+### `POST /jobs/renewals/run` · `POST /jobs/notifications/run` · `POST /jobs/email-scan/run` · `POST /jobs/exchange-rates/run` · `POST /jobs/demo/reset`
+
+**Auth: `x-job-key` header matching the `JOB_TRIGGER_SECRET` env var (timing-safe comparison) — NOT a JWT.** These endpoints have no user context: jobs iterate across all users deliberately (the one sanctioned exception to per-user scoping in `code-standards.md`), so `JwtAuthGuard` is the wrong shape — it would let any logged-in user fire global jobs. A missing or wrong key returns `401` in the standard error envelope.
+
+No request body. Each trigger runs the corresponding job method to completion and returns its summary counts, e.g. renewals:
+```json
+{ "success": true, "data": { "processed": 4, "paymentsLogged": 7, "failures": 0 } }
+```
+(`paymentsLogged` can exceed `processed` because the renewal job is catch-up-safe per feature 34 — one overdue subscription can log several backfilled cycles in a single run.)
+
+`POST /jobs/demo/reset` deletes and reseeds the demo user's data only (subscriptions, payment history, detected subscriptions, notification preferences), with all dates relative to run time. Response: `{ "success": true, "data": { "reset": true } }`.
+
+**Callers must preserve dependency order** when triggering multiple jobs: renewals → notifications → email-scan → exchange-rates (the notification job reads state the renewal job produces). The GitHub Actions workflow encodes this ordering; the endpoints themselves do not enforce it.
+
+---
+
 ## Error Responses
 
 All errors follow:

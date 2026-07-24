@@ -6,9 +6,11 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 12 — Data Export (v2)
-**Last completed:** 32 Export — Web UI + Wiring
-**Next:** None — v1 and v2 roadmaps are both complete (32/32 features)
+**Phase:** Phase 14 — Production Reliability & Reviewer Readiness (post-launch hardening)
+**Last completed:** 34 Renewal Job — Catch-Up Correctness (API) — `renewal.job.ts` now loops per subscription via a new pure `renewal-catchup.util.ts` (`calculateCatchUp`), backfilling one `payment_history` row per missed cycle dated at its actual due date (not `today()`), capped at `MAX_CATCHUP_ITERATIONS` (120), and returns `{ processed, paymentsLogged, failures }` summary counts ready for feature 35's `POST /jobs/renewals/run` to expose. Idempotent by construction — a same-day second run finds nothing due. Unit tests cover weekly/monthly/yearly/custom multi-cycle backfill, exactly-today, not-yet-due, and the iteration cap.
+**Next:** 35 External Job Triggers + Health Endpoint (API + GitHub Actions). Strict order within Phase 14: 34 → 35 → 36 → 37 (see build-plan.md Phase 14 for why). Feature 33 (Mobile Branding & Welcome Screen) remains open and can slot in anytime, but 35–36 still outrank it: the renewal job is now catch-up-safe, but nothing yet triggers it externally, so it still silently stops firing whenever Render's free tier puts the process to sleep.
+
+**Tracker correction:** this file previously read “Next: None — 32/32 complete” while build-plan.md contained feature 33 with no entry here — a real instance of the drift this file exists to prevent. Phase 13 and 14 checklists added below.
 
 ---
 
@@ -81,6 +83,17 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 31 Export API
 - [x] 32 Export — Web UI + Wiring
+
+### Phase 13 — Mobile Branding & Welcome Screen (v2)
+
+- [ ] 33 Mobile App Icon, Splash Screen & Welcome Screen
+
+### Phase 14 — Production Reliability & Reviewer Readiness (post-launch hardening)
+
+- [x] 34 Renewal Job — Catch-Up Correctness (API)
+- [ ] 35 External Job Triggers + Health Endpoint (API + GitHub Actions)
+- [ ] 36 Demo Account — Seeded, Resettable (API + Web)
+- [ ] 37 Repo & Reviewer Documentation
 
 ---
 
