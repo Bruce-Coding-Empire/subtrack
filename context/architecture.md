@@ -203,14 +203,48 @@ Client updates local state / revalidates
 ### Scheduled Renewal Job
 
 ```
-@nestjs/schedule cron fires daily (00:05 server time)
+Triggered by EITHER @nestjs/schedule cron (00:05 server time, fires only while the
+process is awake) OR POST /jobs/renewals/run (GitHub Actions daily, wakes the host)
         ↓
 scheduler/renewal.job.ts queries subscriptions where next_renewal_date <= today AND status = 'active'
         ↓
-For each: write payment_history row, advance next_renewal_date via billing-cycle.util.ts
+For each: CATCH-UP LOOP — while next_renewal_date <= today: write one payment_history
+row dated at that due date (paidAt = due date, never run date), advance
+next_renewal_date one cycle via billing-cycle.util.ts, repeat (capped, feature 34)
         ↓
-Job completion logged
+Job completion logged (processed / paymentsLogged / failures — returned to the
+external trigger as its response body)
 ```
+
+Why the loop: production hosting sleeps, so runs are irregular; a subscription can be
+several cycles overdue when the job finally fires. Single-advance would leave it
+permanently overdue and permanently missing history rows. The loop makes the job's
+output independent of its schedule — and idempotent, which is what makes it safe for
+the in-process cron and the external trigger to both fire on the same day.
+
+### External Job Triggers (feature 35)
+
+```
+GitHub Actions schedule (daily, UTC) — .github/workflows/scheduled-jobs.yml
+        ↓
+Sequential POSTs, x-job-key header (JOB_TRIGGER_SECRET, timing-safe compare in JobTriggerGuard):
+  /jobs/renewals/run → /jobs/notifications/run → /jobs/email-scan/run → /jobs/exchange-rates/run
+  (→ /jobs/demo/reset nightly, feature 36)
+        ↓
+First request wakes a sleeping Render instance (cold start absorbed by the request);
+sequencing in one workflow replaces the old cron-offset ordering (00:05/00:15/01:00),
+which silently assumed the process stayed awake across the whole window — the
+notification job reads state the renewal job produces, so order is a dependency
+        ↓
+GET /health (public, DB-free) serves Render's healthCheckPath and an external uptime
+pinger (~10 min) that keeps the instance warm for human visitors — UX, not correctness
+```
+
+Only the renewal job needs catch-up logic. Notification reminders are forward-looking
+(a missed day is just a missed reminder), the email scan's newer_than:2d Gmail window
+covers a one-day gap once triggering is daily, and FX conversion reads the latest
+cached rate, so staleness degrades gracefully. Renewals is the only job where a missed
+run leaves permanently wrong state rather than a transient gap.
 
 ### Exchange Rate Refresh Job
 

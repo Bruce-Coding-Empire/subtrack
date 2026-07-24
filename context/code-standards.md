@@ -195,19 +195,39 @@ export class RenewalJob {
 
     for (const subscription of due) {
       try {
-        await this.paymentHistoryRepo.save({
-          subscriptionId: subscription.id,
-          userId: subscription.userId,
-          amount: subscription.cost,
-          currency: subscription.currency,
-          paidAt: today(),
-        });
-        subscription.nextRenewalDate = calculateNextRenewalDate(
-          subscription.nextRenewalDate,
-          subscription.billingCycle,
-          subscription.customIntervalDays,
-        );
-        await this.subscriptionRepo.save(subscription);
+        // Catch-up loop (feature 34): the job may not run every day — production
+        // hosting sleeps, so a subscription can be several cycles overdue. One
+        // advance per run would leave it overdue forever and drop history rows.
+        // Looping until the renewal date is in the future makes the job correct
+        // under irregular scheduling AND idempotent (a same-day second run finds
+        // nothing due) — which is what makes the external trigger + in-process
+        // cron double-firing in feature 35 safe.
+        let iterations = 0;
+        while (subscription.nextRenewalDate <= today() && iterations < MAX_CATCHUP_ITERATIONS) {
+          await this.paymentHistoryRepo.save({
+            subscriptionId: subscription.id,
+            userId: subscription.userId,
+            amount: subscription.cost,
+            currency: subscription.currency,
+            // The due date being processed, NOT today(): backfilled payments must
+            // land in the month they notionally happened, or the spend-trend chart
+            // attributes several cycles of spend to whichever month caught up.
+            paidAt: subscription.nextRenewalDate,
+          });
+          subscription.nextRenewalDate = calculateNextRenewalDate(
+            subscription.nextRenewalDate,
+            subscription.billingCycle,
+            subscription.customIntervalDays,
+          );
+          await this.subscriptionRepo.save(subscription);
+          iterations++;
+        }
+        if (iterations === MAX_CATCHUP_ITERATIONS) {
+          // Defense in depth: DTO validation forbids customIntervalDays < 1, but an
+          // unbounded while over persisted data still deserves a ceiling. 120 covers
+          // a weekly subscription unprocessed for over two years.
+          this.logger.error(`[RenewalJob] catch-up cap hit for subscription ${subscription.id}`);
+        }
       } catch (error) {
         this.logger.error(`Failed to renew subscription ${subscription.id}`, error);
         // never let one failure stop the loop
@@ -281,8 +301,15 @@ async function apiFetch<T>(
 | `NEXT_PUBLIC_API_URL`     | apps/web             | Exposed to browser — API base URL |
 | `NEXT_PUBLIC_SITE_URL`    | apps/web             | Exposed to browser — canonical site URL, resolves `metadataBase` for OG/Twitter images |
 | `EXPO_PUBLIC_API_URL`     | apps/mobile           | Exposed to app bundle — API base URL |
+| `JOB_TRIGGER_SECRET`      | apps/api             | Machine secret for `POST /jobs/*` triggers (feature 35) — checked via timing-safe compare in `JobTriggerGuard`, never a JWT. Generate long/random; set in Render and as a GitHub Actions repo secret |
+| `DEMO_USER_EMAIL`         | apps/api             | Identifies the demo account for `seed:demo` / `POST /jobs/demo/reset` (feature 36) |
+| `DEMO_USER_PASSWORD`      | apps/api             | Demo account password used by the seed — deliberately not sensitive, see note below |
+| `NEXT_PUBLIC_DEMO_EMAIL`  | apps/web             | Exposed to browser — the landing page's "Try the demo" button logs in with these |
+| `NEXT_PUBLIC_DEMO_PASSWORD` | apps/web           | Exposed to browser — deliberately public, see note below |
 
 Never hardcode a URL, secret, or key anywhere in the codebase. `NEXT_PUBLIC_` / `EXPO_PUBLIC_` prefixes mean the value ships to the client — never put a secret behind those prefixes.
+
+**Demo credentials are the one deliberate exception to “never a secret behind `NEXT_PUBLIC_`” — because they are not secrets.** The demo account exists to be logged into by strangers; its credentials guard nothing, and its data is wiped and reseeded nightly (`POST /jobs/demo/reset`). Do not extend this reasoning to anything else: `JOB_TRIGGER_SECRET` and every other credential stays server-side only.
 
 ---
 
@@ -292,8 +319,8 @@ Never hardcode a URL, secret, or key anywhere in the codebase. `NEXT_PUBLIC_` / 
 - `apps/api` → Render (free web service — no credit card required; chosen over Railway specifically because it runs a normal long-running Node process, which this app's in-process `@Cron` jobs and persistent TypeORM pool need). Build/start commands defined in the repo-root `render.yaml` Blueprint, no `rootDir` set (keeps the npm workspace lockfile visible to `npm ci`)
 - Postgres → Neon (free, no credit card, no expiry — chosen over Render's own free Postgres, which expires after 30–90 days). Always connects over TLS: `DATABASE_SSL=true` in production
 - No custom domain — Vercel and Render both run on platform-default domains (`*.vercel.app` / `*.onrender.com`), which are unrelated domains to each other. This is why the refresh-token cookie's `SameSite` is environment-aware (`none` in production, `lax` in dev) rather than a fixed value
-- Render's free plan sleeps the service after 15 minutes idle (30–60s cold start on the next request); a sleeping instance won't fire an in-process `@Cron` job that lands while it's asleep — acceptable for this project, revisit with an uptime pinger or a paid plan if reliable scheduled jobs become necessary
-- Migrations are never run automatically on deploy — run `npm run migration:run` manually from a local machine against the production `DATABASE_URL` after any deploy that changes the schema. Never run `npm run seed` against production.
+- Render's free plan sleeps the service after 15 minutes idle (30–60s cold start on the next request); a sleeping instance won't fire an in-process `@Cron` job that lands while it's asleep. **No longer an accepted tradeoff** — the renewal job produces `payment_history` (the spend-trend chart's source data), so silently skipped runs leave permanently wrong state a portfolio reviewer would see as a broken app. Fixed in Phase 14 with three layers, in priority order: (1) the renewal job is catch-up-safe and idempotent (feature 34 — correct results regardless of when it runs; this layer does the real work), (2) a GitHub Actions scheduled workflow calls secret-guarded `POST /jobs/*` triggers daily in dependency order, the request itself waking the instance (feature 35), (3) an external uptime pinger on `GET /health` (≈10 min interval) keeps the instance warm so human visitors skip the cold start — UX only, not correctness. The in-process `@Cron` decorators stay: double-firing is harmless because of layer 1, and each scheduler covers the other's failure mode (GitHub's is best-effort and auto-disabled after 60 days of repo inactivity; the in-process one dies with sleep). `render.yaml`'s `healthCheckPath` points at `/health`.
+- Migrations are never run automatically on deploy — run `npm run migration:run` manually from a local machine against the production `DATABASE_URL` after any deploy that changes the schema. Never run `npm run seed` (dev fixtures) against production. `npm run seed:demo` is the one sanctioned production exception (feature 36): idempotent, touches only the demo user's rows, and is the same path `POST /jobs/demo/reset` runs nightly.
 
 ---
 
