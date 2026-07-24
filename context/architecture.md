@@ -114,16 +114,21 @@
 │   │       │   │   ├── notifications.controller.ts
 │   │       │   │   ├── notifications.service.ts
 │   │       │   │   └── entities/notification-preference.entity.ts
-│   │       │   └── integrations/
-│   │       │       ├── integrations.module.ts
-│   │       │       ├── gmail-integration.controller.ts
-│   │       │       ├── gmail-integration.service.ts
-│   │       │       ├── gmail-api.service.ts    → token refresh + Gmail REST fetch, used by email-scan.job.ts
-│   │       │       ├── detected-subscriptions.controller.ts   → GET/approve/dismiss for the review UI, feature 30
-│   │       │       ├── detected-subscriptions.service.ts
-│   │       │       ├── dto/
-│   │       │       ├── entities/email-connection.entity.ts
-│   │       │       └── entities/detected-subscription.entity.ts
+│   │       │   ├── integrations/
+│   │       │   │   ├── integrations.module.ts
+│   │       │   │   ├── gmail-integration.controller.ts
+│   │       │   │   ├── gmail-integration.service.ts
+│   │       │   │   ├── gmail-api.service.ts    → token refresh + Gmail REST fetch, used by email-scan.job.ts
+│   │       │   │   ├── detected-subscriptions.controller.ts   → GET/approve/dismiss for the review UI, feature 30
+│   │       │   │   ├── detected-subscriptions.service.ts
+│   │       │   │   ├── dto/
+│   │       │   │   ├── entities/email-connection.entity.ts
+│   │       │   │   └── entities/detected-subscription.entity.ts
+│   │       │   └── export/                 → feature 31, file-download exports (no entities — reads subscriptions/payment_history)
+│   │       │       ├── export.module.ts
+│   │       │       ├── export.controller.ts   → GET /export/subscriptions, GET /export/payment-history
+│   │       │       ├── export.service.ts
+│   │       │       └── dto/export-query.dto.ts
 │   │       └── common/                     → LOGIC FOLDER 2 — cross-cutting concerns
 │   │           ├── guards/
 │   │           │   └── jwt-auth.guard.ts
@@ -135,7 +140,9 @@
 │   │           │   └── current-user.decorator.ts
 │   │           └── utils/
 │   │               ├── billing-cycle.util.ts   → next_renewal_date calculation
-│   │               └── email-parser.util.ts    → vendor/amount/currency/cycle heuristics for email-scan.job.ts
+│   │               ├── email-parser.util.ts    → vendor/amount/currency/cycle heuristics for email-scan.job.ts
+│   │               ├── csv.util.ts             → manual CSV serialization, feature 31
+│   │               └── pdf-table.util.ts       → shared PDFKit table renderer, feature 31
 │   │
 │   └── mobile/                              → Expo app
 │       ├── app/                            → Expo Router
