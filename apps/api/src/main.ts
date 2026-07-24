@@ -12,6 +12,7 @@ async function bootstrap() {
   app.enableCors({
     origin: configService.getOrThrow<string>('WEB_APP_URL'),
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   });
 
   app.useGlobalPipes(
