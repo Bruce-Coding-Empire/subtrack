@@ -5,12 +5,12 @@
     "apps/*"
   ],
   "scripts": {
-    "dev:web": "npm run dev --workspace=apps/web",
-    "dev:api": "npm run start:dev --workspace=apps/api",
-    "dev:mobile": "npm run start --workspace=apps/mobile",
-    "dev": "concurrently \"npm run dev:web\" \"npm run dev:api\"",
-    "build:web": "npm run build --workspace=apps/web",
-    "build:api": "npm run build --workspace=apps/api",
+    "dev:web": "node init && npm run dev --workspace=apps/web",
+    "dev:api": "node init && npm run start:dev --workspace=apps/api",
+    "dev:mobile": "node init && npm run start --workspace=apps/mobile",
+    "dev": "node init && concurrently \"npm run dev:web\" \"npm run dev:api\"",
+    "build:web": "node init && npm run build --workspace=apps/web",
+    "build:api": "node init && npm run build --workspace=apps/api",
     "postinstall": "node scripts/link-expo-router.js && node scripts/link-next.js"
   },
   "devDependencies": {
