@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 14 — Production Reliability & Reviewer Readiness (post-launch hardening)
-**Last completed:** 36 Demo Account — Seeded, Resettable (API + Web) — `DemoSeedService` (`modules/jobs/`) wipes and reseeds only the demo user's data with run-time-relative dates (10 subscriptions across 4 currencies/all 5 categories/all 4 billing cycles incl. one cancelled, ~47 payment-history rows over 6 months, 2 pending detected subscriptions, notification prefs, spend limit 46–85% consumed depending on day of month); exposed as `npm run seed:demo` and `POST /jobs/demo/reset` (same `JobTriggerGuard`), the latter added as the nightly last step of `scheduled-jobs.yml`; web landing hero gained the `TryDemoButton` (Secondary) logging in via the normal auth path with the public `NEXT_PUBLIC_DEMO_*` credentials. **Manual steps for the user before live:** feature 35's GitHub/Render/uptime-monitor steps if not yet done, plus `DEMO_USER_EMAIL`/`DEMO_USER_PASSWORD` on Render, `NEXT_PUBLIC_DEMO_EMAIL`/`NEXT_PUBLIC_DEMO_PASSWORD` on Vercel, then one `npm run seed:demo` against production (or a manual `workflow_dispatch` run).
-**Next:** 37 Repo & Reviewer Documentation — the last Phase 14 feature (34 → 35 → 36 → 37; see build-plan.md Phase 14). Everything else (features 1–36) is complete.
+**Phase:** Phase 14 — Production Reliability & Reviewer Readiness (post-launch hardening) — **complete**
+**Last completed:** 37 Repo & Reviewer Documentation — root `README.md` rewritten for a reviewer: live app link (`https://subtrack-web-two.vercel.app/`) and "Try the demo" pointer up top, live Swagger link (`https://subtrack-api-djbr.onrender.com/api/docs`), full v1+v2 feature list, updated stack/scripts tables, and reviewer screenshots (`context/screenshots/`: `web-landing`, `web-dashboard`, `web-subscriptions`, `mobile-welcome`, `mobile-dashboard`, `mobile-subscriptions`) captured from the branded dev build (post-feature-33). Swagger's `NODE_ENV !== 'production'` gate removed in `main.ts` — it had meant `/api/docs` 404'd on Render, since Render always sets `NODE_ENV=production`; the gate's removal is recorded in `code-standards.md`'s env table. Shipped as two PRs on `main`: #47 (`chore/expose-production-swagger` — the Swagger fix + first README/web-screenshots pass) and this branch (mobile screenshots + this tracker update).
+**Next:** None — all 37 features across v1 and v2, plus Phase 14 hardening, are complete. Any further work is a fresh, unspecced initiative — start by adding a new numbered phase to `build-plan.md`.
 
 **Tracker correction:** this file previously read “Next: None — 32/32 complete” while build-plan.md contained feature 33 with no entry here — a real instance of the drift this file exists to prevent. Phase 13 and 14 checklists added below.
 
@@ -93,7 +93,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 34 Renewal Job — Catch-Up Correctness (API)
 - [x] 35 External Job Triggers + Health Endpoint (API + GitHub Actions)
 - [x] 36 Demo Account — Seeded, Resettable (API + Web)
-- [ ] 37 Repo & Reviewer Documentation
+- [x] 37 Repo & Reviewer Documentation
 
 ---
 

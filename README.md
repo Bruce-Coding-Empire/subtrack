@@ -57,9 +57,9 @@ Subscriptions are invisible once set up. They renew silently, spend creeps up mo
 <td align="center"><b>Mobile Subscriptions</b></td>
 </tr>
 <tr>
-<td><img src="context/screenshots/mobile-welcome.png" width="200"/></td>
-<td><img src="context/screenshots/mobile-dashboard.png" width="200"/></td>
-<td><img src="context/screenshots/mobile-subscriptions.png" width="200"/></td>
+<td><img src="context/screenshots/mobile-welcome.jpeg" width="200"/></td>
+<td><img src="context/screenshots/mobile-dashboard.jpeg" width="200"/></td>
+<td><img src="context/screenshots/mobile-subscriptions.jpeg" width="200"/></td>
 </tr>
 </table>
 
