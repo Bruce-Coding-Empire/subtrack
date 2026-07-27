@@ -43,8 +43,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
     let cancelled = false;
 
     async function bootstrap() {
-      const storedRefreshToken = await getStoredRefreshToken();
-      const authenticated = storedRefreshToken ? await refreshAccessToken() : false;
+      let authenticated = false;
+      try {
+        const storedRefreshToken = await getStoredRefreshToken();
+        authenticated = storedRefreshToken ? await refreshAccessToken() : false;
+      } catch (error) {
+        console.error("[SessionProvider] bootstrap failed", error);
+      }
       if (!cancelled) {
         setIsAuthenticated(authenticated);
         setIsLoading(false);

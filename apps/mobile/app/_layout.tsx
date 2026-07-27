@@ -37,6 +37,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
       </Stack.Protected>
       <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="welcome" />
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
     </Stack>
