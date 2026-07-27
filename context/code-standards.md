@@ -287,7 +287,7 @@ async function apiFetch<T>(
 
 | Variable                | Used In            | Notes                          |
 | ------------------------ | -------------------- | --------------------------------- |
-| `NODE_ENV`                | apps/api             | `development` \| `production` — gates Swagger and the refresh-token cookie's `SameSite` value |
+| `NODE_ENV`                | apps/api             | `development` \| `production` — gates the refresh-token cookie's `SameSite` value |
 | `PORT`                    | apps/api             | API listen port — `8000` in dev (matches `api-contract.md`'s base URL), also the code fallback in `main.ts` |
 | `WEB_APP_URL`             | apps/api             | Web app origin — CORS allow-origin (`credentials: true`) and the Gmail OAuth callback's redirect target |
 | `DATABASE_URL`            | apps/api             | Postgres connection string        |
