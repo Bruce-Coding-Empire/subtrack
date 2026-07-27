@@ -27,6 +27,11 @@ export type UpdateUserInput = {
   monthlySpendLimit?: number | null;
 };
 
+export type ChangePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
+};
+
 export type BillingCycle = "weekly" | "monthly" | "yearly" | "custom";
 
 export type SubscriptionCategory = "entertainment" | "software" | "fitness" | "utilities" | "other";

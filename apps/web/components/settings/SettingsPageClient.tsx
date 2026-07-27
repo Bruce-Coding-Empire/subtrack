@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { ChangePasswordSection } from "@/components/settings/ChangePasswordSection";
 import { GmailConnectionSection } from "@/components/settings/GmailConnectionSection";
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
 import { ProfileSection } from "@/components/settings/ProfileSection";
@@ -69,6 +70,7 @@ export function SettingsPageClient({ gmailStatus }: Props) {
       ) : (
         <div className="flex max-w-2xl flex-col gap-6">
           <ProfileSection profile={profile} onSaved={setProfile} />
+          <ChangePasswordSection />
           <SpendLimitSection profile={profile} onSaved={setProfile} />
           <NotificationsSection />
           <GmailConnectionSection />

@@ -5,10 +5,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -31,5 +33,17 @@ export class UsersController {
   async updateMe(@CurrentUser() userId: string, @Body() dto: UpdateUserDto) {
     const data = await this.usersService.updateProfile(userId, dto);
     return { success: true, data };
+  }
+
+  @Patch('me/password')
+  @UseGuards(ThrottlerGuard)
+  @ApiOperation({ summary: "Change the current user's password" })
+  @ApiResponse({ status: 200, description: 'Password changed' })
+  async changePassword(
+    @CurrentUser() userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.usersService.changePassword(userId, dto);
+    return { success: true };
   }
 }
