@@ -2,11 +2,14 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 export type UserProfileResponse = {
   id: string;
@@ -15,6 +18,8 @@ export type UserProfileResponse = {
   baseCurrency: string;
   monthlySpendLimit: number | null;
 };
+
+const BCRYPT_SALT_ROUNDS = 10;
 
 @Injectable()
 export class UsersService {
@@ -74,6 +79,29 @@ export class UsersService {
       return this.toProfileResponse(saved);
     } catch {
       throw new InternalServerErrorException('Failed to update profile');
+    }
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const currentPasswordMatches = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!currentPasswordMatches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    try {
+      user.passwordHash = await bcrypt.hash(
+        dto.newPassword,
+        BCRYPT_SALT_ROUNDS,
+      );
+      await this.userRepo.save(user);
+    } catch {
+      throw new InternalServerErrorException('Failed to change password');
     }
   }
 

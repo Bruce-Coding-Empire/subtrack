@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api-client";
-import type { ApiResponse, UpdateUserInput, UserProfile } from "@/types";
+import type { ApiResponse, ChangePasswordInput, UpdateUserInput, UserProfile } from "@/types";
 
 // Fired whenever the profile is updated so long-lived components (e.g. the
 // navbar, which fetches once on mount) can refresh without a full reload.
@@ -20,4 +20,11 @@ export async function updateCurrentUserProfile(
     window.dispatchEvent(new Event(PROFILE_UPDATED_EVENT));
   }
   return result;
+}
+
+export async function changePassword(input: ChangePasswordInput): Promise<ApiResponse<void>> {
+  return apiFetch<void>("/users/me/password", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }

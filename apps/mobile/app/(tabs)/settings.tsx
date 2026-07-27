@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
+import { ChangePasswordSection } from "@/components/settings/ChangePasswordSection";
 import { ProfileSection } from "@/components/settings/ProfileSection";
 import { SpendLimitSection } from "@/components/settings/SpendLimitSection";
 import { Colors } from "@/constants/colors";
@@ -80,6 +81,7 @@ export default function SettingsScreen() {
         ) : (
           <>
             <ProfileSection profile={profile} onSaved={handleProfileSaved} />
+            <ChangePasswordSection />
             <SpendLimitSection profile={profile} onSaved={handleProfileSaved} />
           </>
         )}
