@@ -42,3 +42,8 @@ example
 # generated native folders
 /ios
 /android
+
+# Firebase service account key — secret, uploaded to EAS not committed.
+# (google-services.json is NOT secret and must stay committed for EAS builds.)
+*-firebase-adminsdk-*.json
+google-service-account*.json
