@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1025677008168",
+    "project_id": "subtrack-ed50c",
+    "storage_bucket": "subtrack-ed50c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1025677008168:android:12030b54be99fc191a841d",
+        "android_client_info": {
+          "package_name": "com.brucheins.subtrack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJJJwJwMdmnhuwIU078LfathNgtNkbkGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
