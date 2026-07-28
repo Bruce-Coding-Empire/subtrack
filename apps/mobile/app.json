@@ -14,7 +14,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.brucheins.subtrack"
+      "package": "com.brucheins.subtrack",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",
